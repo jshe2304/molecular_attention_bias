@@ -1,0 +1,16 @@
+  File "/home/jshe/inverse_power_attention/src/train.py", line 89
+  File "/home/jshe/inverse_power_attention/src/train.py", line 89
+    dropout=0.1, 
+    dropout=0.1, 
+    ^
+    ^
+SyntaxError: invalid syntax
+SyntaxError: invalid syntax
+  File "/home/jshe/inverse_power_attention/src/train.py", line 89
+  File "/home/jshe/inverse_power_attention/src/train.py", line 89
+    dropout=0.1, 
+    dropout=0.1, 
+    ^
+    ^
+SyntaxError: invalid syntax
+SyntaxError: invalid syntax
