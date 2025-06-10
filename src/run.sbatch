@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
-#SBATCH --array=1-8
+#SBATCH --array=1-4
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=jshe@rcc.uchicago.edu
 

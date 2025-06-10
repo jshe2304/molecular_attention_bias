@@ -18,12 +18,9 @@ from models.bias_maps import *
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 bias_map_name, E, H, D, *_ = sys.argv[1:]
-E, H, D = int(E), int(H), int(D)
 
-if bias_map_name == 'PositiveLinear':
-    bias_map = PositiveLinear(1, H), 
-elif bias_map_name == 'GaussianKernel':
-    bias_map = GaussianKernelMap(H * 4, H)
+E, H, D = int(E), int(H), int(D)
+BiasMap = bias_maps[bias_map_name]
 
 #############
 # Directories
@@ -85,7 +82,7 @@ model = Transformer(
     in_features=6, 
     out_features=n_properties, 
     E=E, H=H, D=D, 
-    bias_map=bias_map, 
+    BiasMap=BiasMap, 
     dropout=0.1, 
 ).to(device)
 
@@ -97,13 +94,13 @@ optimizer = torch.optim.Adam(model.parameters(), weight_decay=0.001)
 mse = nn.MSELoss()
 
 for epoch in range(64):
-    for atoms, padding, coordinates, y_true in train_dataloader:
+    for features, padding, coordinates, y_true in train_dataloader:
         model.train()
         optimizer.zero_grad()
 
-        # Send to device
+        # Move to device
 
-        atom_features = atoms.float().to(device)
+        features = features.float().to(device)
         padding = padding.to(device)
         coordinates = coordinates.float().to(device)
         y_true = y_true.float().to(device)
@@ -111,26 +108,26 @@ for epoch in range(64):
         # Forward pass
         
         y_pred = model(
-            atom_features, coordinates, padding, 
+            features, coordinates, padding, 
         )
         loss = mse(y_pred, y_true)
         loss.backward()
         optimizer.step()
 
-        print(loss)
+        print(float(loss))
 
     # Log train statistics
 
     model.eval()
     with torch.no_grad():
 
-        atoms, padding, coordinates, y_true = next(iter(validation_dataloader))
+        features, padding, coordinates, y_true = next(iter(validation_dataloader))
         y_pred = model(
-            atoms.float().to(device), 
+            features.float().to(device), 
             coordinates.float().to(device), 
             padding.to(device), 
         )
-        validation_loss = float(mse(y_pred, y_true.to(device)))
+        validation_loss = float(mse(y_pred, y_true.float().to(device)))
         validation_score = float(r2_score(y_true.cpu(), y_pred.cpu()))
 
     # Write to log

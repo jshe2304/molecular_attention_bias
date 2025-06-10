@@ -26,7 +26,7 @@ def featurize_atoms(atoms_arr, device='cpu'):
     Returns:
         List[List[float]]
     '''
-
+    
     features_list = [
         torch.tensor([get_features(atom) for atom in atoms], device=device)
         for atoms in atoms_arr
@@ -54,8 +54,8 @@ def collate_point_clouds(batch):
 
     atoms_batch, coordinates_batch, y_batch = zip(*batch)
 
-    atoms, padding = featurize_atoms(atoms_batch)
-    coordinates = torch.stack(coordinates_batch)[:, :atoms.shape[1], :]
+    features, padding = featurize_atoms(atoms_batch)
+    coordinates = torch.stack(coordinates_batch)[:, :features.shape[1], :]
     y = torch.stack(y_batch)
 
-    return atoms, padding, coordinates, y
+    return features, padding, coordinates, y
