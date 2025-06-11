@@ -33,7 +33,6 @@ class TransformerBlock(nn.Module):
 
         e0 = self.norm_1(e)
         e1 = self.operator(e0, attn_mask=attn_mask, attn_bias=attn_bias)
-        
         e1 = self.dropout(e1)
         e2 = e1 + e0
 

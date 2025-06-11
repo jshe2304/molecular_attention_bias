@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from datetime import datetime
 
 from sklearn.metrics import r2_score
@@ -9,7 +10,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from utils.datasets import *
-from utils.point_clouds import *
+from utils.point_clouds import collate_featurize, collate_tokenize
 from utils.smiles import *
 
 from models.transformer import Transformer
@@ -26,8 +27,8 @@ BiasMap = bias_maps[bias_map_name]
 # Directories
 #############
 
-logdir = f'./logs/{bias_map_name}/E{E}_H{H}_{D}/'
-weightsdir = f'./weights/{bias_map_name}/E{E}_H{H}_{D}/'
+logdir = f'./logs/{bias_map_name}/emb_E{E}_H{H}_{D}/'
+weightsdir = f'./weights/{bias_map_name}/emb_E{E}_H{H}_{D}/'
 
 run_fname = datetime.now().strftime("%m_%d_%H_%M_%S")
 run_fname += '_'
@@ -51,7 +52,7 @@ fnames = [
     'coordinates.npy',
     'y.npy', 
 ]
-collate_fn = collate_point_clouds
+collate_fn = collate_tokenize
 
 # Datasets
 
@@ -67,7 +68,7 @@ n_properties = train_dataset.n_properties
 
 train_dataloader = DataLoader(
     train_dataset, 
-    batch_size=64, collate_fn=collate_fn, shuffle=True
+    batch_size=128, collate_fn=collate_fn, shuffle=True
 )
 validation_dataloader = DataLoader(
     validation_dataset, 
@@ -100,13 +101,13 @@ for epoch in range(64):
 
         # Move to device
 
-        features = features.float().to(device)
+        features = features.to(device)
         padding = padding.to(device)
         coordinates = coordinates.float().to(device)
         y_true = y_true.float().to(device)
 
         # Forward pass
-        
+
         y_pred = model(
             features, coordinates, padding, 
         )
@@ -114,7 +115,7 @@ for epoch in range(64):
         loss.backward()
         optimizer.step()
 
-        print(float(loss))
+        #print(float(loss))
 
     # Log train statistics
 
@@ -123,7 +124,7 @@ for epoch in range(64):
 
         features, padding, coordinates, y_true = next(iter(validation_dataloader))
         y_pred = model(
-            features.float().to(device), 
+            features.to(device), 
             coordinates.float().to(device), 
             padding.to(device), 
         )
