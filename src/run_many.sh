@@ -4,11 +4,14 @@
 BIAS_CLASSES=(
     #"FixedPowerLaw1"
     #"FixedPowerLaw2"
-    "FixedPowerLaw3"
+    #"FixedPowerLaw3"
     #"FixedPowerLaw4"
     #"FixedPowerLaw5"
-    #"LearnedNegativePowerLaw"
+    #"ExpNegativePowerLaw"
+    #"PowerLaw"
+    #"SoftplusNegativePowerLaw"
     #"GaussianBasis"
+    "Zeros"
 )
 
 # Loop through each class and submit a SLURM job

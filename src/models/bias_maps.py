@@ -1,6 +1,13 @@
 import torch
 import torch.nn as nn
 
+class Zeros(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super(Zeros, self).__init__()
+
+    def forward(self, d):
+        return 0
+
 class FixedPowerLaw1(nn.Module):
     def __init__(self, *args, **kwargs):
         super(FixedPowerLaw1, self).__init__()
@@ -46,9 +53,9 @@ class FixedPowerLaw5(nn.Module):
             torch.log(d).nan_to_num(torch.finfo(d.dtype).max)
         ).unsqueeze(1)
 
-class LearnedNegativePowerLaw(nn.Module):
+class ExpNegativePowerLaw(nn.Module):
     def __init__(self, n_heads, *args, **kwargs):
-        super(LearnedNegativePowerLaw, self).__init__()
+        super(ExpNegativePowerLaw, self).__init__()
         
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
         nn.init.xavier_uniform_(self.log_p)
@@ -60,15 +67,32 @@ class LearnedNegativePowerLaw(nn.Module):
             self.log_p.exp()
         ).permute(0, 3, 1, 2)
 
-class LearnedPowerLaw(nn.Module):
+class SoftplusNegativePowerLaw(nn.Module):
     def __init__(self, n_heads, *args, **kwargs):
-        super(LearnedPowerLaw, self).__init__()
+        super(SoftplusNegativePowerLaw, self).__init__()
+        
+        self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
+        nn.init.xavier_uniform_(self.log_p)
+
+    def forward(self, d):
+        
+        return -nn.functional.linear(
+            torch.log(d).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
+            nn.functional.softplus(self.log_p)
+        ).permute(0, 3, 1, 2)
+
+class PowerLaw(nn.Module):
+    def __init__(self, n_heads, *args, **kwargs):
+        super(PowerLaw, self).__init__()
         
         self.p = nn.Parameter(torch.Tensor(n_heads, 1))
         nn.init.xavier_uniform_(self.p)
 
     def forward(self, d):
-        return nn.functional.linear(torch.log(d), self.p)
+        return nn.functional.linear(
+            d.unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
+            self.p
+        ).permute(0, 3, 1, 2)
 
 class GaussianBasis(nn.Module):
 
@@ -112,7 +136,9 @@ bias_maps = {
     "FixedPowerLaw3": FixedPowerLaw3,
     "FixedPowerLaw4": FixedPowerLaw4,
     "FixedPowerLaw5": FixedPowerLaw5,
-    "LearnedNegativePowerLaw": LearnedNegativePowerLaw,
-    "LearnedPowerLaw": LearnedPowerLaw,
+    "ExpNegativePowerLaw": ExpNegativePowerLaw,
+    "SoftplusNegativePowerLaw": SoftplusNegativePowerLaw,
+    "PowerLaw": PowerLaw,
     "GaussianBasis": GaussianBasis,
+    "Zeros": Zeros, 
 }

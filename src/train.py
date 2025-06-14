@@ -27,8 +27,8 @@ BiasMap = bias_maps[bias_map_name]
 # Directories
 #############
 
-logdir = f'./logs/{bias_map_name}/emb_E{E}_H{H}_{D}/'
-weightsdir = f'./weights/{bias_map_name}/emb_E{E}_H{H}_{D}/'
+logdir = f'./logs/{bias_map_name}/E{E}_H{H}_D{D}/'
+weightsdir = f'./weights/{bias_map_name}/E{E}_H{H}_D{D}/'
 
 run_fname = datetime.now().strftime("%m_%d_%H_%M_%S")
 run_fname += '_'
@@ -68,7 +68,7 @@ n_properties = train_dataset.n_properties
 
 train_dataloader = DataLoader(
     train_dataset, 
-    batch_size=128, collate_fn=collate_fn, shuffle=True
+    batch_size=64, collate_fn=collate_fn, shuffle=True
 )
 validation_dataloader = DataLoader(
     validation_dataset, 
