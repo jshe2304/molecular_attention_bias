@@ -87,6 +87,7 @@ model = Transformer(
 #######
 
 optimizer = torch.optim.Adam(model.parameters(), weight_decay=0.001)
+scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=3)
 mse = nn.MSELoss()
 
 for epoch in range(64):
@@ -130,6 +131,10 @@ for epoch in range(64):
 
     with open(logdir + run_fname + '.csv', 'a') as f:
         f.write(f'{float(loss)},{validation_loss},{validation_score}\n')
+
+    # Step scheduler
+
+    scheduler.step()
 
 # Save model
 

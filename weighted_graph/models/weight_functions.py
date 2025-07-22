@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 
 class Zeros(nn.Module):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(Zeros, self).__init__()
 
-    def forward(self, *_): return 0
+    def forward(self, d):
+        return 0
 
 class FixedPowerLaw(nn.Module):
     def __init__(self, H, p):
@@ -18,7 +19,7 @@ class FixedPowerLaw(nn.Module):
         ).unsqueeze(1)
 
 class ExpNegativePowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(ExpNegativePowerLaw, self).__init__()
         
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -32,7 +33,7 @@ class ExpNegativePowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
 
 class SoftplusNegativePowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(SoftplusNegativePowerLaw, self).__init__()
         
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -46,7 +47,7 @@ class SoftplusNegativePowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
 
 class PowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(PowerLaw, self).__init__()
         
         self.p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -58,23 +59,9 @@ class PowerLaw(nn.Module):
             self.p
         ).permute(0, 3, 1, 2)
 
-class MLP(nn.Module):
-    def __init__(self, n_heads, hidden_dim=64):
-        super(MLP, self).__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(1, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, n_heads)
-        )
-
-    def forward(self, d):
-        return self.mlp(
-            d.unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max)
-        )
-
 class GaussianKernel(nn.Module):
 
-    def __init__(self, n_heads, n_kernels=32):
+    def __init__(self, n_heads, n_kernels=32, *args, **kwargs):
         super().__init__()
 
         # Gaussian parameters
@@ -108,12 +95,11 @@ class GaussianKernel(nn.Module):
 
         return attn_bias.nan_to_num(torch.finfo(d.dtype).max)
 
-bias_maps = {
+weight_functions = {
     "FixedPowerLaw": FixedPowerLaw,
     "ExpNegativePowerLaw": ExpNegativePowerLaw,
     "SoftplusNegativePowerLaw": SoftplusNegativePowerLaw,
     "PowerLaw": PowerLaw,
-    "MLP": MLP,
     "GaussianKernel": GaussianKernel,
     "Zeros": Zeros, 
 }

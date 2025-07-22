@@ -10,7 +10,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from utils.datasets import *
-from utils.point_clouds import collate_featurize, collate_tokenize
+from utils.point_clouds import collate_tokenize
 from utils.smiles import *
 
 from models.transformer import Transformer
@@ -80,7 +80,7 @@ validation_dataloader = DataLoader(
 #######
 
 model = Transformer(
-    in_features=6, 
+    n_tokens=6, 
     out_features=n_properties, 
     E=E, H=H, D=D, 
     BiasMap=BiasMap, 
@@ -115,7 +115,7 @@ for epoch in range(64):
         loss.backward()
         optimizer.step()
 
-        #print(float(loss))
+        print(float(loss))
 
     # Log train statistics
 

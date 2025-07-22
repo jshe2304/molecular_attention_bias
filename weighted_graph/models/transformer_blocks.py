@@ -1,15 +1,15 @@
 import torch
 import torch.nn as nn
 
-from .attention import Attention
+from .graph_operators import WeightedMessagePassing
 
 class TransformerBlock(nn.Module):
-    def __init__(self, E, H, BiasMap, dropout=0.1, **kwargs):
+    def __init__(self, E, H, WeightFunction, dropout=0.1, **kwargs):
         super().__init__()
 
-        self.bias_map = BiasMap(H, **kwargs)
+        self.weight_function = WeightFunction(H, **kwargs)
         
-        self.attn = Attention(E, H)
+        self.operator = WeightedMessagePassing(E, H)
         self.norm_1 = nn.LayerNorm(E)
         self.mlp = nn.Sequential(
             nn.Linear(E, E * 4), 
@@ -19,20 +19,20 @@ class TransformerBlock(nn.Module):
         self.norm_2 = nn.LayerNorm(E)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, e, d, padding_mask, attn_mask):
+    def forward(self, e, d, causal_mask, padding_mask):
 
         B, L, E = e.shape
 
-        # Scale bias
+        # Process interatomic distances into weights
 
-        attn_bias = self.bias_map(
+        weights = self.weight_function(
             d.reshape(B, L, L)
         )
 
         # Attention block
 
         e0 = self.norm_1(e)
-        e1 = self.attn(e0, attn_mask=attn_mask, attn_bias=attn_bias)
+        e1 = self.operator(e0, weights=weights, causal_mask=causal_mask)
         e1 = self.dropout(e1)
         e2 = e1 + e0
 

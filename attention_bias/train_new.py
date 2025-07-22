@@ -9,25 +9,30 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from fairchem.core.modules.scheduler import CosineLRLambda
+
 from utils.datasets import *
-from utils.smiles import *
+from utils.point_clouds import collate_tokenize
 
 from models.transformer import Transformer
-from models.positional_encodings import pos_encs
+from models.bias_maps import *
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-pos_enc, E, H, D, *_ = sys.argv[1:]
+bias_map_name, E, H, D, *args = sys.argv[1:]
 
 E, H, D = int(E), int(H), int(D)
-PositionalEncoding = pos_encs[pos_enc]
+BiasMap = bias_maps[bias_map_name]
+kwargs = dict(map(lambda x: x.split('='), args))
+if kwargs: 
+    bias_map_name += list(kwargs.values())[0]
 
 #############
 # Directories
 #############
 
-logdir = f'./logs/{pos_enc}_E{E}_H{H}_D{D}/'
-weightsdir = f'./weights/{pos_enc}_E{E}_H{H}_D{D}/'
+logdir = f'./logs/{bias_map_name}/E{E}_H{H}_D{D}/'
+weightsdir = f'./weights/{bias_map_name}/E{E}_H{H}_D{D}/'
 
 run_fname = datetime.now().strftime("%m_%d_%H_%M_%S")
 run_fname += '_'
@@ -47,10 +52,10 @@ with open(logdir + run_fname + '.csv', 'w') as f:
 
 datadir = '/scratch/midway3/jshe/data/qm9/scaffolded/'
 fnames = [
-    'smiles.npy',
+    'atoms.npy',
+    'coordinates.npy',
     'y.npy', 
 ]
-collate_fn = collate_smiles
 
 # Datasets
 
@@ -66,11 +71,13 @@ n_properties = train_dataset.n_properties
 
 train_dataloader = DataLoader(
     train_dataset, 
-    batch_size=64, collate_fn=collate_fn, shuffle=True
+    batch_size=64, collate_fn=collate_tokenize, shuffle=True, 
+    pin_memory=True,
 )
 validation_dataloader = DataLoader(
     validation_dataset, 
-    batch_size=2048, collate_fn=collate_fn, shuffle=True
+    batch_size=4096, collate_fn=collate_tokenize, shuffle=True, 
+    pin_memory=True,
 )
 
 #######
@@ -81,8 +88,9 @@ model = Transformer(
     n_tokens=6, 
     out_features=n_properties, 
     E=E, H=H, D=D, 
-    PositionalEncoding=PositionalEncoding, 
+    BiasMap=BiasMap, 
     dropout=0.1, 
+    **kwargs
 ).to(device)
 
 #######
@@ -90,44 +98,34 @@ model = Transformer(
 #######
 
 optimizer = torch.optim.Adam(model.parameters(), weight_decay=0.001)
-scheduler = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, total_iters=3)
+
+#lambda_fn = CosineLRLambda(warmup_epochs=2, warmup_factor=0.1, epochs=64, lr_min_factor=0.01)
+#scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda_fn)
+
 mse = nn.MSELoss()
 
 for epoch in range(64):
-    for tokens, padding, adjs, y_true in train_dataloader:
+    for tokens, padding, coordinates, y_true in train_dataloader:
         model.train()
         optimizer.zero_grad()
 
-        # Move to device
-
-        tokens = tokens.to(device)
-        padding = padding.to(device)
-        adjs = adjs.to(device)
-        y_true = y_true.float().to(device)
-
         # Forward pass
 
-        y_pred = model(
-            tokens, padding, adjs
-        )
-        loss = mse(y_pred, y_true)
+        y_pred = model(tokens, coordinates.float(), padding)
+        loss = mse(y_pred, y_true.float())
         loss.backward()
         optimizer.step()
 
-        #print(float(loss))
+        print(float(loss))
 
     # Log train statistics
 
     model.eval()
     with torch.no_grad():
 
-        tokens, padding, adjs, y_true = next(iter(validation_dataloader))
-        y_pred = model(
-            tokens.to(device), 
-            padding.to(device), 
-            adjs.to(device)
-        )
-        validation_loss = float(mse(y_pred, y_true.float().to(device)))
+        tokens, padding, coordinates, y_true = next(iter(validation_dataloader))
+        y_pred = model(tokens, coordinates.float(), padding)
+        validation_loss = float(mse(y_pred, y_true.float()))
         validation_score = float(r2_score(y_true.cpu(), y_pred.cpu()))
 
     # Write to log
@@ -137,7 +135,7 @@ for epoch in range(64):
 
     # Step scheduler
 
-    scheduler.step()
+    #scheduler.step()
 
 # Save model
 

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class SDPAOperator(nn.Module):
+class Attention(nn.Module):
     def __init__(self, E, H, **kwargs):
         super().__init__()
 

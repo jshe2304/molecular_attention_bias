@@ -96,7 +96,7 @@ def collate_tokenize(batch):
     Collate a DataLoader outputs corresponding to point clouds.
 
     Args:
-        batch: List[Tuple[str, Array, Array]]
+        batch: List(Tuple(str), Array(B, 3), Array(B))
 
     Returns:
         Tuple(torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor)

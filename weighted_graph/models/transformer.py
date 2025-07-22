@@ -5,7 +5,7 @@ from .transformer_blocks import TransformerBlock
 
 class Transformer(nn.Module):
 
-    def __init__(self, n_tokens, out_features, E, H, D, BiasMap, dropout=0.1, **kwargs):
+    def __init__(self, n_tokens, out_features, E, H, D, WeightFunction, dropout=0.1, **kwargs):
         super().__init__()
 
         self.E, self.H, self.D = E, H, D
@@ -16,7 +16,7 @@ class Transformer(nn.Module):
         # Transformer blocks
         self.transformer_blocks = nn.ModuleList([
             TransformerBlock(
-                E, H, BiasMap, dropout=dropout, **kwargs
+                E, H, WeightFunction, dropout=dropout, **kwargs
             ) for _ in range(D)
         ])
         
@@ -40,7 +40,7 @@ class Transformer(nn.Module):
 
         diag_causal_mask = torch.diag(torch.ones(L)).bool().to(padding.device)
         padding_causal_mask = (padding.unsqueeze(-2) | padding.unsqueeze(-1)).unsqueeze(1)
-        attn_mask = padding_causal_mask | diag_causal_mask.expand_as(padding_causal_mask)
+        causal_mask = padding_causal_mask | diag_causal_mask.expand_as(padding_causal_mask)
 
         padding_mask = padding.unsqueeze(-1).expand(B, L, self.E)
 
@@ -51,8 +51,8 @@ class Transformer(nn.Module):
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
                 e=e, d=d, 
+                causal_mask=causal_mask, 
                 padding_mask=padding_mask, 
-                attn_mask=attn_mask, 
             )
 
         e = self.norm(e)
