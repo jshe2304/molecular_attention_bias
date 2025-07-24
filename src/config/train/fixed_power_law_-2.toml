@@ -1,0 +1,40 @@
+model_name = "BiasedAttentionTransformer"
+
+[model]
+n_tokens = 6
+out_features = 5
+E = 96
+H = 8
+D = 8
+bias_function_name = "FixedPowerLaw"
+dropout = 0.1
+p = -2
+
+[training]
+epochs = 64
+batch_size = 32
+learning_rate = 0.001
+weight_decay = 0.00001
+warmup_start_factor = 0.1
+warmup_epochs = 4
+plateau_factor = 0.1
+plateau_patience = 4
+output_dir = "/home/jshe/molecular_attention_bias/PowerLaw_E128H8D8/"
+
+[train_dataset]
+atoms_file = "/scratch/midway3/jshe/data/qm9/scaffolded/train/atoms.npy"
+coordinates_file = "/scratch/midway3/jshe/data/qm9/scaffolded/train/coordinates.npy"
+y_file = "/scratch/midway3/jshe/data/qm9/scaffolded/train/y.npy"
+y_labels_file = "/scratch/midway3/jshe/data/qm9/transformed/y_labels.npy"
+y_mean_file = "/scratch/midway3/jshe/data/qm9/transformed/y_means.npy"
+y_std_file = "/scratch/midway3/jshe/data/qm9/transformed/y_std.npy"
+target_labels = ['homo', 'lumo', 'U', 'H', 'G']
+
+[validation_dataset]
+atoms_file = "/scratch/midway3/jshe/data/qm9/scaffolded/validation/atoms.npy"
+coordinates_file = "/scratch/midway3/jshe/data/qm9/scaffolded/validation/coordinates.npy"
+y_file = "/scratch/midway3/jshe/data/qm9/scaffolded/validation/y.npy"
+y_labels_file = "/scratch/midway3/jshe/data/qm9/transformed/y_labels.npy"
+y_mean_file = "/scratch/midway3/jshe/data/qm9/transformed/y_means.npy"
+y_std_file = "/scratch/midway3/jshe/data/qm9/transformed/y_std.npy"
+target_labels = ['homo', 'lumo', 'U', 'H', 'G']

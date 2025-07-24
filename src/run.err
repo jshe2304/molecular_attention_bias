@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/home/jshe/molecular_attention_bias/src/script_train.py", line 29, in <module>
+    config = toml.load(config_path)
+  File "/scratch/midway3/jshe/.conda/envs/env/lib/python3.9/site-packages/toml/decoder.py", line 133, in load
+    with io.open(_getpath(f), encoding='utf-8') as ffile:
+FileNotFoundError: [Errno 2] No such file or directory: './config/train_power_law.toml'
