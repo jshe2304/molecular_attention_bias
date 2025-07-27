@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from modules.attention import GraphSDPAttention
+from .modules.attention import GraphSDPAttention
 
 class GraphAttentionTransformerBlock(nn.Module):
     def __init__(self, E, H, dropout=0.1):

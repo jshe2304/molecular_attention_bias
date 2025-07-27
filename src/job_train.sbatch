@@ -12,6 +12,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=jshe@rcc.uchicago.edu
 
+conda init
 conda activate env
 
 python3 script_train.py $1

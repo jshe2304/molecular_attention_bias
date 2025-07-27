@@ -4,7 +4,7 @@ if [[ "$1" == "cpu" ]]; then
 
 	sinteractive \
 		--account=pi-andrewferguson \
-		--partition=gm4-pmext \
+		--partition=caslake \
 		--time=04:00:00 \
 		--nodes=1 \
 		--ntasks-per-node=8 \
@@ -14,7 +14,7 @@ elif [[ "$1" == "gpu" ]]; then
 
 	sinteractive \
 		--account=pi-andrewferguson \
-		--partition=andrewferguson-gpu \
+		--partition=gpu \
 		--time=04:00:00 \
 		--gres=gpu:1 \
 		--nodes=1 \

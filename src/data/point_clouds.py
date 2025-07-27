@@ -36,7 +36,7 @@ class PointCloudDataset(Dataset):
         self.coordinates = torch.tensor(
             np.load(coordinates_file, allow_pickle=True), 
             dtype=torch.float32
-        )
+        )[:, :self.tokens.shape[1]]
         self.y = torch.tensor(
             np.load(y_file, allow_pickle=True), 
             dtype=torch.float32

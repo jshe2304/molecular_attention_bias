@@ -67,7 +67,7 @@ class GraphSDPAttention(nn.Module):
         # Compute attention
 
         attn = nn.functional.scaled_dot_product_attention(
-            q, k, v, attn_mask=attn_mask, 
+            q, k, v, attn_mask=attn_mask
         )
         attn = attn.permute(0, 2, 1, 3) # (B, L, H, A)
         attn = attn.reshape(B, L, E) # E = H * A

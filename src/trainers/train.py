@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 
 import numpy as np
@@ -55,8 +56,7 @@ def _sample_metrics(model, dataset, n_samples=4096, batch_size=64, device='cpu')
 
 def _train_one_epoch(
     model, train_dataloader, device, 
-    optimizer, scheduler=None, 
-    **kwargs
+    optimizer, scheduler=None
     ):
     """
     Train the model for one epoch minimizing the MSE loss.
@@ -70,6 +70,8 @@ def _train_one_epoch(
 
     model.train()
     for *inputs, y_true in train_dataloader:
+
+        start_time = time.time()
 
         # Send data to device
 
@@ -87,6 +89,8 @@ def _train_one_epoch(
 
         optimizer.step()
         if scheduler is not None: scheduler.step()
+
+        break
 
 def train(
     model, device, 
@@ -123,6 +127,7 @@ def train(
     train_dataloader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
+        num_workers=4,
     )
 
     # Optimizer
@@ -167,9 +172,11 @@ def train(
 
         # Step scheduler
 
-        scheduler.step(validation_loss)
+        scheduler.step(validation_loss.mean())
 
         # Store metrics
+
+        print(train_loss, validation_loss, train_score, validation_score)
 
         metrics.append(np.concatenate(
             (train_loss, validation_loss, train_score, validation_score)

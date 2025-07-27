@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
+import time
 
-from models.modules import radial_functions
-from modules.attention import SDPAttention
+from .modules import radial_functions
+from .modules.attention import SDPAttention
 
 class BiasedAttentionTransformerBlock(nn.Module):
     def __init__(self, E, H, radial_function_name, dropout=0.1, **radial_kwargs):
@@ -77,7 +78,7 @@ class BiasedAttentionTransformer(nn.Module):
         self.norm = nn.LayerNorm(E)
         self.out_map = nn.Linear(E, out_features)
 
-    def forward(self, tokens, r, padding):
+    def forward(self, tokens, padding, r):
 
         assert tokens.shape[0] == r.shape[0] == padding.shape[0]
         B, L, *_ = tokens.shape
@@ -107,7 +108,6 @@ class BiasedAttentionTransformer(nn.Module):
                 padding_mask=padding_mask, 
                 attn_mask=attn_mask, 
             )
-
         e = self.norm(e)
         e = e.mean(dim=1)
 

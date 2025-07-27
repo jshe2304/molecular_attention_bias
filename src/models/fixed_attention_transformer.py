@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch
 import torch.nn as nn
 
-from models.modules import radial_functions
-from modules.fixed_attention import FixedAttention
+from .modules import radial_functions
+from .modules.fixed_attention import FixedAttention
 
 class FixedAttentionTransformerBlock(nn.Module):
     def __init__(self, E, H, radial_function_name, dropout=0.1, **radial_kwargs):
@@ -72,7 +72,7 @@ class FixedAttentionTransformer(nn.Module):
         self.norm = nn.LayerNorm(E)
         self.out_map = nn.Linear(E, out_features)
 
-    def forward(self, tokens, r, padding):
+    def forward(self, tokens, padding, r):
 
         assert tokens.shape[0] == r.shape[0] == padding.shape[0]
         B, L, *_ = tokens.shape

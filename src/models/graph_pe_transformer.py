@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
 
-from modules import positional_encodings
-from modules.attention import SDPAOperator
+from .modules import graph_positional_encodings
+from .modules.attention import SDPAttention
 
 class TransformerBlock(nn.Module):
     def __init__(self, E, H, dropout=0.1):
         super().__init__()
 
-        self.operator = SDPAOperator(E, H)
+        self.operator = SDPAttention(E, H)
         self.norm_1 = nn.LayerNorm(E)
         self.mlp = nn.Sequential(
             nn.Linear(E, E * 4), 
@@ -56,7 +56,7 @@ class GraphPETransformer(nn.Module):
         self.embed = nn.Embedding(n_tokens, E, padding_idx=0)
 
         # Positonal Encoding
-        PositionalEncoding = positional_encodings.name_to_module[positional_encoding_name]
+        PositionalEncoding = graph_positional_encodings.name_to_module[positional_encoding_name]
         self.positional_encoding = PositionalEncoding(E, **pe_kwargs)
         
         # Transformer blocks
