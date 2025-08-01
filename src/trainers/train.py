@@ -3,7 +3,6 @@ import time
 from datetime import datetime
 
 import numpy as np
-from sklearn.metrics import r2_score
 
 import torch
 from torch.optim import AdamW
@@ -11,51 +10,11 @@ from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
-@torch.no_grad()
-def _sample_metrics(model, dataset, n_samples=4096, batch_size=64, device='cpu'):
-    """
-    Estimates the loss of the model on a dataset. 
-    No support for distributed inference, only single GPU/CPU. 
-
-    Args:
-        model: The model to evaluate. 
-        dataset: The dataset to evaluate on. 
-        n_samples: The number of samples to use for evaluation. 
-        batch_size: The batch size to use for evaluation. 
-        device: The device to use for evaluation. 
-    """
-
-    dataloader = DataLoader(dataset, batch_size=batch_size)
-
-    model.eval()
-    batch_y_pred, batch_y_true = [], []
-    for i, (*inputs, y_true) in enumerate(dataloader):
-        if i * batch_size >= n_samples: break
-
-        # Send data to device
-
-        inputs = [input.to(device) for input in inputs]
-
-        # Forward pass
-
-        pred = model(*inputs) # (B, N_properties)
-
-        # Store predictions and true values
-
-        batch_y_pred.append(pred.cpu())
-        batch_y_true.append(y_true.cpu())
-
-    all_y_pred = torch.cat(batch_y_pred, dim=0)
-    all_y_true = torch.cat(batch_y_true, dim=0)
-
-    loss = F.mse_loss(all_y_pred, all_y_true, reduction='none').mean(dim=0)
-    loss = dataset.unnormalize(loss).numpy()
-    score = r2_score(all_y_true, all_y_pred, multioutput='raw_values')
-
-    return loss, score
+from .metrics import compute_metrics
 
 def _train_one_epoch(
-    model, train_dataloader, device, 
+    model, device, 
+    dataloader, 
     optimizer, scheduler=None
     ):
     """
@@ -63,15 +22,14 @@ def _train_one_epoch(
 
     Args:
         model: The model to train
-        optimizer: The optimizer to use
         device: The device to use
-        train_dataloader: The dataloader for the training data
+        dataloader: The dataloader for the training data
+        optimizer: The optimizer to use
+        scheduler: Optional batch-wise learning rate scheduler
     """
 
     model.train()
-    for *inputs, y_true in train_dataloader:
-
-        start_time = time.time()
+    for *inputs, y_true in dataloader:
 
         # Send data to device
 
@@ -84,13 +42,8 @@ def _train_one_epoch(
         y_pred = model(*inputs)
         loss = F.mse_loss(y_pred, y_true)
         loss.backward()
-
-        # Step optimizer and scheduler
-
         optimizer.step()
         if scheduler is not None: scheduler.step()
-
-        break
 
 def train(
     model, device, 
@@ -99,6 +52,7 @@ def train(
     learning_rate, weight_decay,
     warmup_start_factor, warmup_epochs, plateau_factor, plateau_patience,
     output_dir, 
+    logger=None, 
     ):
     """
     Train the model on a single device. 
@@ -108,64 +62,69 @@ def train(
         device: The device to use
         train_dataset: The training dataset
         validation_dataset: The validation dataset
+        epochs: The number of epochs to train for
+        batch_size: The batch size to use
         learning_rate: The learning rate
         weight_decay: The weight decay
         warmup_start_factor: The start factor for the warmup phase
         warmup_epochs: The total number of epochs for the warmup phase
         plateau_factor: The factor for the plateau phase
         plateau_patience: The patience for the plateau phase
-        epochs: The number of epochs to train for
-        batch_size: The batch size to use
-        checkpoint_period: How often to save the model (epochs)
-        checkpoint_dir: The directory to save the checkpoints
+        output_dir: Directory to write logs and checkpoints
         logger: Optional wandb logger
         **kwargs: Overflow arguments
     """
 
+    # Make metrics labels
+
+    metric_labels = [
+        f'{split}/{label}_{metric_type}'
+        for metric in ('mse', 'r2')
+        for label in train_dataset.y_labels
+        for split in ('train', 'val')
+    ]
+
     # Dataloader
 
-    train_dataloader = DataLoader(
+    dataloader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
-        num_workers=4,
+        num_workers=4, 
+        collate_fn=train_dataset.collate
     )
 
-    # Optimizer
+    # Optimizer and schedulers
 
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
-    # Schedulers
-
-    warmup_steps = warmup_epochs * len(train_dataloader)
     warmup = lr_scheduler.LinearLR(
-        optimizer, start_factor=warmup_start_factor, total_iters=warmup_steps
+        optimizer, 
+        start_factor=warmup_start_factor, total_iters=warmup_epochs * len(dataloader)
     )
+
     scheduler = lr_scheduler.ReduceLROnPlateau(
         optimizer, factor=plateau_factor, patience=plateau_patience
     )
 
-    # Metrics
-
-    metrics = []
-
     # Training
 
+    # all_metrics = []
     for epoch in range(epochs):
 
         # Train
 
         _train_one_epoch(
-            model, train_dataloader, device, 
+            model, dataloader, device, 
             optimizer, scheduler=warmup
         )
 
         # Sample metrics
 
-        train_loss, train_score = _sample_metrics(
+        train_loss, train_score = compute_metrics(
             model, train_dataset, 
             batch_size=batch_size, device=device
         )
-        validation_loss, validation_score = _sample_metrics(
+        validation_loss, validation_score = compute_metrics(
             model, validation_dataset, 
             batch_size=batch_size, device=device
         )
@@ -174,36 +133,26 @@ def train(
 
         scheduler.step(validation_loss.mean())
 
-        # Store metrics
+        # Log metrics
 
-        print(train_loss, validation_loss, train_score, validation_score)
+        metrics = np.concatenate((
+            train_loss, validation_loss, train_score, validation_score
+        )).tolist()
 
-        metrics.append(np.concatenate(
-            (train_loss, validation_loss, train_score, validation_score)
-        ))
+        if logger is not None:
+            logger.log(dict(zip(metric_labels, metrics)))
 
-    # Make output directory
+        # all_metrics.append(this_metrics)
+    
+    # # Save logs
 
-    os.makedirs(output_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    timestamp += '_' + str(os.environ.get("SLURM_ARRAY_TASK_ID"))
+    # os.makedirs(output_dir, exist_ok=True)
+    # with open(os.path.join(output_dir, f'log_{timestamp}.csv'), 'w') as f:
+    #     f.write(','.join(metric_labels) + '\n')
+    #     for metrics in all_metrics:
+    #         f.write(','.join(str(n) for n in metrics) + '\n')
 
-    # Save logs
-
-    with open(os.path.join(output_dir, f'log_{timestamp}.csv'), 'w') as f:
-
-        # Create header
-
-        for metric_type in ['train_loss', 'validation_loss', 'train_score', 'validation_score']:
-            for label in train_dataset.y_labels:
-                f.write(f'{label}_{metric_type},')
-        f.write('\n')
-
-        # Write metrics
-
-        for row in metrics:
-            f.write(','.join(list(row)) + ',\n')
-
-    # Save model
-
-    torch.save(model.state_dict(), os.path.join(output_dir, f'model_{timestamp}.pt'))
+    # # Save model
+    
+    # model_file = os.path.join(output_dir, f'model_{timestamp}.pt')
+    # torch.save(model.state_dict(), model_file)

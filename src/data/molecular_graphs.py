@@ -129,6 +129,12 @@ class MolecularGraphDataset(Dataset):
     def unnormalize(self, y):
         return y * self.y_std + self.y_mean
 
+    @staticmethod
+    def collate(batch):
+        tokens, padding, adj_matrices, y = default_collate(batch)
+        L = (~padding).sum(dim=1).max().item() # Batch max sequence length
+        return tokens[:, :L], padding[:, :L], adj_matrices[:, :L, :L], y
+
 if __name__ == '__main__':
     
     dataset = MolecularGraphDataset(

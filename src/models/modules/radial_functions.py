@@ -108,12 +108,17 @@ class GaussianKernel(nn.Module):
 
         return attn_bias.nan_to_num(torch.finfo(d.dtype).max)
 
-name_to_module = {
-    "FixedPowerLaw": FixedPowerLaw,
-    "ExpNegativePowerLaw": ExpNegativePowerLaw,
-    "SoftplusNegativePowerLaw": SoftplusNegativePowerLaw,
-    "PowerLaw": PowerLaw,
-    "MLP": MLP,
-    "GaussianKernel": GaussianKernel,
-    "Zeros": Zeros, 
-}
+def get_radial_function(radial_function_type: str, *args, **kwargs):
+    if radial_function_type == "FixedPowerLaw": 
+        return FixedPowerLaw(*args, **kwargs)
+    if radial_function_type == "ExpNegativePowerLaw": 
+        return ExpNegativePowerLaw(*args, **kwargs)
+    if radial_function_type == "SoftplusNegativePowerLaw": 
+        return SoftplusNegativePowerLaw(*args, **kwargs)
+    if radial_function_type == "PowerLaw": 
+        return PowerLaw(*args, **kwargs)
+    if radial_function_type == "MLP": MLP,
+    if radial_function_type == "GaussianKernel": 
+        return GaussianKernel(*args, **kwargs)
+    if radial_function_type == "Zeros": 
+        return Zeros(*args, **kwargs)

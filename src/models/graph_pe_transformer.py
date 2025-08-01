@@ -4,7 +4,7 @@ import torch.nn as nn
 from .modules import graph_positional_encodings
 from .modules.attention import SDPAttention
 
-class TransformerBlock(nn.Module):
+class GraphPETransformerBlock(nn.Module):
     def __init__(self, E, H, dropout=0.1):
         super().__init__()
 

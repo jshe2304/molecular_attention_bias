@@ -7,8 +7,6 @@ class GraphAttentionTransformerBlock(nn.Module):
     def __init__(self, E, H, dropout=0.1):
         super().__init__()
 
-        # Bias map
-        
         self.attn = GraphSDPAttention(E, H)
         self.norm_1 = nn.LayerNorm(E)
         self.mlp = nn.Sequential(

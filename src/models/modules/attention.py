@@ -37,8 +37,9 @@ class SDPAttention(nn.Module):
         values = attn @ v
         values = values.permute(0, 2, 1, 3) # (B, L, H, A)
         values = values.reshape(B, L, E) # E = H * A
+        values = self.out_map(values)
         
-        return self.out_map(values)
+        return values
 
 class GraphSDPAttention(nn.Module):
     def __init__(self, E, H, **kwargs):

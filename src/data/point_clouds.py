@@ -1,7 +1,7 @@
 import numpy as np
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, default_collate
 from torch.nn.utils.rnn import pad_sequence
 
 class PointCloudDataset(Dataset):
@@ -83,6 +83,12 @@ class PointCloudDataset(Dataset):
 
     def unnormalize(self, y):
         return y * self.y_std + self.y_mean
+
+    @staticmethod
+    def collate(batch):
+        tokens, padding, coordinates, y = default_collate(batch)
+        L = (~padding).sum(dim=1).max().item() # Batch max sequence length
+        return tokens[:, :L], padding[:, :L], coordinates[:, :L], y
     
 if __name__ == '__main__':
 

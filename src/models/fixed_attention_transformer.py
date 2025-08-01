@@ -8,11 +8,17 @@ from .modules import radial_functions
 from .modules.fixed_attention import FixedAttention
 
 class FixedAttentionTransformerBlock(nn.Module):
-    def __init__(self, E, H, radial_function_name, dropout=0.1, **radial_kwargs):
+    def __init__(self, E, H, radial_function_type, dropout=0.1, **radial_kwargs):
         super().__init__()
 
-        RadialFunction = radial_functions.name_to_module[radial_function_name]
-        self.radial_function = RadialFunction(H, **radial_kwargs)
+        # Radial function
+
+        self.radial_function = get_radial_function(
+            radial_function_type, 
+            H, **radial_kwargs
+        )
+
+        # Layers
         
         self.operator = FixedAttention(E, H)
         self.norm_1 = nn.LayerNorm(E)
@@ -53,7 +59,7 @@ class FixedAttentionTransformerBlock(nn.Module):
 
 class FixedAttentionTransformer(nn.Module):
 
-    def __init__(self, n_tokens, out_features, E, H, D, radial_function_name, dropout=0.1, **radial_kwargs):
+    def __init__(self, n_tokens, out_features, E, H, D, radial_function_type, dropout=0.1, **radial_kwargs):
         super().__init__()
 
         self.E, self.H, self.D = E, H, D
@@ -64,7 +70,7 @@ class FixedAttentionTransformer(nn.Module):
         # Transformer blocks
         self.transformer_blocks = nn.ModuleList([
             FixedAttentionTransformerBlock(
-                E, H, radial_function_name, dropout=dropout, **radial_kwargs
+                E, H, radial_function_type, dropout=dropout, **radial_kwargs
             ) for _ in range(D)
         ])
         

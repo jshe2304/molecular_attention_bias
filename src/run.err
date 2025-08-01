@@ -1,9 +1,2 @@
-
-CondaError: Run 'conda init' before 'conda activate'
-
-Traceback (most recent call last):
-  File "/home/jshe/molecular_attention_bias/src/script_train.py", line 43, in <module>
-    train(
-  File "/home/jshe/molecular_attention_bias/src/trainers/train.py", line 177, in train
-    metrics.append(np.concatenate(
-ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 2 dimension(s) and the array at index 2 has 1 dimension(s)
+wandb: Tracking run with wandb version 0.21.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
