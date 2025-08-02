@@ -127,6 +127,7 @@ class MolecularGraphDataset(Dataset):
         return self.tokens[idx], self.padding[idx], self.adj_matrices[idx], self.y[idx]
 
     def unnormalize(self, y):
+        assert y.shape[1] == self.y_mean.shape[1] == self.y_std.shape[1]
         return y * self.y_std + self.y_mean
 
     @staticmethod

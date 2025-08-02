@@ -7,8 +7,9 @@ out_features = 3
 E = 64
 H = 8
 D = 8
-radial_function_type = "PowerLaw"
+radial_function_type = "FixedPowerLaw"
 dropout = 0.1
+p = -1
 
 [train_config]
 epochs = 96

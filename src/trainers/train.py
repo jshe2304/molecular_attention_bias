@@ -1,6 +1,4 @@
 import os
-import time
-from datetime import datetime
 
 import numpy as np
 
@@ -15,7 +13,7 @@ from .metrics import compute_metrics
 def _train_one_epoch(
     model, device, 
     dataloader, 
-    optimizer, scheduler=None
+    optimizer
     ):
     """
     Train the model for one epoch minimizing the MSE loss.
@@ -25,7 +23,6 @@ def _train_one_epoch(
         device: The device to use
         dataloader: The dataloader for the training data
         optimizer: The optimizer to use
-        scheduler: Optional batch-wise learning rate scheduler
     """
 
     model.train()
@@ -43,16 +40,13 @@ def _train_one_epoch(
         loss = F.mse_loss(y_pred, y_true)
         loss.backward()
         optimizer.step()
-        if scheduler is not None: scheduler.step()
 
 def train(
     model, device, 
-    train_dataset, validation_dataset, 
+    train_dataset, val_dataset, 
     epochs, batch_size, 
     learning_rate, weight_decay,
-    warmup_start_factor, warmup_epochs, plateau_factor, plateau_patience,
     output_dir, 
-    logger=None, 
     ):
     """
     Train the model on a single device. 
@@ -61,61 +55,53 @@ def train(
         model: The model to train
         device: The device to use
         train_dataset: The training dataset
-        validation_dataset: The validation dataset
+        val_dataset: The validation dataset
         epochs: The number of epochs to train for
         batch_size: The batch size to use
         learning_rate: The learning rate
         weight_decay: The weight decay
-        warmup_start_factor: The start factor for the warmup phase
-        warmup_epochs: The total number of epochs for the warmup phase
-        plateau_factor: The factor for the plateau phase
-        plateau_patience: The patience for the plateau phase
         output_dir: Directory to write logs and checkpoints
-        logger: Optional wandb logger
-        **kwargs: Overflow arguments
     """
 
-    # Make metrics labels
+    # Make metrics labels and write log header
 
     metric_labels = [
-        f'{split}/{label}_{metric_type}'
-        for metric in ('mse', 'r2')
+        f'{split}_{label}_{metric}'
+        for metric in ('mae', 'r2')
         for label in train_dataset.y_labels
         for split in ('train', 'val')
     ]
 
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, 'log.csv'), 'w') as f:
+        f.write(','.join(metric_labels) + '\n')
+
     # Dataloader
 
     dataloader = DataLoader(
-        train_dataset, 
-        batch_size=batch_size, 
-        num_workers=4, 
+        train_dataset, batch_size=batch_size, 
+        num_workers=4, persistent_workers=True, pin_memory=True, 
         collate_fn=train_dataset.collate
     )
 
     # Optimizer and schedulers
 
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-
-    warmup = lr_scheduler.LinearLR(
-        optimizer, 
-        start_factor=warmup_start_factor, total_iters=warmup_epochs * len(dataloader)
-    )
-
-    scheduler = lr_scheduler.ReduceLROnPlateau(
-        optimizer, factor=plateau_factor, patience=plateau_patience
+    scheduler = lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=epochs, eta_min=1e-8
     )
 
     # Training
 
-    # all_metrics = []
+    best_state_dict, best_loss = None, float('inf')
     for epoch in range(epochs):
 
         # Train
 
         _train_one_epoch(
-            model, dataloader, device, 
-            optimizer, scheduler=warmup
+            model, device, 
+            dataloader, 
+            optimizer, 
         )
 
         # Sample metrics
@@ -124,35 +110,32 @@ def train(
             model, train_dataset, 
             batch_size=batch_size, device=device
         )
-        validation_loss, validation_score = compute_metrics(
-            model, validation_dataset, 
+
+        val_loss, val_score = compute_metrics(
+            model, val_dataset, 
             batch_size=batch_size, device=device
         )
+        mean_val_loss = val_loss.mean()
 
         # Step scheduler
 
-        scheduler.step(validation_loss.mean())
+        scheduler.step()
 
         # Log metrics
 
         metrics = np.concatenate((
-            train_loss, validation_loss, train_score, validation_score
+            train_loss, val_loss, train_score, val_score
         )).tolist()
 
-        if logger is not None:
-            logger.log(dict(zip(metric_labels, metrics)))
+        with open(os.path.join(output_dir, 'log.csv'), 'a') as f:
+            f.write(','.join(str(n) for n in metrics) + '\n')
 
-        # all_metrics.append(this_metrics)
+        # Update best model
+
+        if mean_val_loss < best_loss:
+            best_state_dict = model.state_dict()
+            best_loss = mean_val_loss
     
-    # # Save logs
+    # Save best model
 
-    # os.makedirs(output_dir, exist_ok=True)
-    # with open(os.path.join(output_dir, f'log_{timestamp}.csv'), 'w') as f:
-    #     f.write(','.join(metric_labels) + '\n')
-    #     for metrics in all_metrics:
-    #         f.write(','.join(str(n) for n in metrics) + '\n')
-
-    # # Save model
-    
-    # model_file = os.path.join(output_dir, f'model_{timestamp}.pt')
-    # torch.save(model.state_dict(), model_file)
+    torch.save(best_state_dict, os.path.join(output_dir, f'model.pt'))

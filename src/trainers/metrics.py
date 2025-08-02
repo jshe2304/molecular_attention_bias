@@ -31,18 +31,17 @@ def compute_metrics(model, dataset, n_samples=2048, batch_size=64, device='cpu')
 
         # Forward pass
 
-        pred = model(*inputs) # (B, N_properties)
+        pred = model(*inputs)
 
         # Store predictions and true values
 
         batch_y_pred.append(pred.cpu())
         batch_y_true.append(y_true.cpu())
 
-    all_y_pred = torch.cat(batch_y_pred, dim=0)
-    all_y_true = torch.cat(batch_y_true, dim=0)
+    all_y_pred = dataset.unnormalize(torch.cat(batch_y_pred, dim=0))
+    all_y_true = dataset.unnormalize(torch.cat(batch_y_true, dim=0))
 
-    loss = F.mse_loss(all_y_pred, all_y_true, reduction='none').mean(dim=0)
-    loss = dataset.unnormalize(loss).squeeze().numpy()
-    score = r2_score(all_y_true, all_y_pred, multioutput='raw_values')
+    mae = F.l1_loss(all_y_pred, all_y_true, reduction='none').mean(dim=0)
+    r2 = r2_score(all_y_true, all_y_pred, multioutput='raw_values')
 
-    return loss, score
+    return mae.squeeze().numpy(), r2
