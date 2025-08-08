@@ -75,7 +75,7 @@ class GraphAttentionTransformer(nn.Module):
 
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
-                e=e, adj=adj, 
+                e=e, 
                 attn_mask=causal_mask, 
                 padding_mask=padding_mask, 
             )

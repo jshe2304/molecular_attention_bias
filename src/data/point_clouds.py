@@ -11,6 +11,7 @@ class PointCloudDataset(Dataset):
             y_labels_file, y_mean_file, y_std_file, 
             target_labels,
             atom_symbols='HCNOF', 
+            *args, **kwargs
         ):
         """
         Initialize a point cloud dataset.
@@ -93,16 +94,14 @@ class PointCloudDataset(Dataset):
     
 if __name__ == '__main__':
 
-    dataset = PointCloudDataset(
-        atoms_file = "/scratch/midway3/jshe/data/qm9/scaffolded/train/atoms.npy",
-        coordinates_file = "/scratch/midway3/jshe/data/qm9/scaffolded/train/coordinates.npy",
-        y_file = "/scratch/midway3/jshe/data/qm9/scaffolded/train/y.npy",
-        y_mean_file = "/scratch/midway3/jshe/data/qm9/transformed/y_mean.npy",
-        y_std_file = "/scratch/midway3/jshe/data/qm9/transformed/y_std.npy",
-        y_labels_file = "/scratch/midway3/jshe/data/qm9/transformed/y_labels.npy",
-        target_labels = ['homo', 'lumo', 'U0', 'U', 'H', 'G'],
-    )
+    import toml
 
+    config_file = '../config/train/power_law_bias.toml'
+    config = toml.load(config_file)
+
+    dataset = PointCloudDataset(**config['train_dataset_config'])
+
+    print('____Shapes____')
     print('Number of samples:', len(dataset))
     print('Tokens:', dataset.tokens.shape)
     print('Padding:', dataset.padding.shape)
@@ -112,13 +111,22 @@ if __name__ == '__main__':
     print('y_std:', dataset.y_std.shape)
     print('y_labels:', dataset.y_labels)
 
+    print('\n____Normalization____')
+    print('Mean: ', dataset.y_mean)
+    print('Std: ', dataset.y_std)
+
     from torch.utils.data import DataLoader
 
     dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
-
+    
     for tokens, padding, coordinates, y in dataloader:
+        print('\n____Batch Shapes____')
         print('Batch tokens:', tokens.shape)
         print('Batch padding:', padding.shape)
         print('Batch coordinates:', coordinates.shape)
         print('Batch y:', y.shape)
+
+        print('\n____Batch Statistics____')
+        print('Batch mean: ', y.mean(axis=0))
+        print('Batch std: ', y.std(axis=0))
         break

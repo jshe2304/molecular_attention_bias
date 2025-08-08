@@ -22,17 +22,20 @@ from trainers.train import train
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def _make_run_ids(model_type, radial_function_type, E, H, D, *args, **kwargs):
+def _make_run_ids(model_type, E, H, D, **kwargs):
 
     # Group ID
     group_id = model_type + '/'
-    group_id += radial_function_type + '/'
+    if 'radial_function_type' in kwargs:
+        group_id += kwargs['radial_function_type'] + str(kwargs.get('p', '')) + '/'
+    elif 'positional_encoding_type' in kwargs:
+        group_id += kwargs['positional_encoding_type'] + str(kwargs.get('k', '')) + '/'
     group_id += f'E{E}H{H}D{D}'
 
     # Run ID
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     slurm_id = os.environ.get("SLURM_ARRAY_TASK_ID")
     slurm_id = str(slurm_id if slurm_id is not None else 0)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_id = timestamp + slurm_id
 
     return group_id, run_id

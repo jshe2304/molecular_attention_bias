@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, default_collate
 from torch.nn.utils.rnn import pad_sequence
 
 from rdkit.Chem import MolFromSmiles

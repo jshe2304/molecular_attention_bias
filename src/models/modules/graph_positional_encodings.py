@@ -40,6 +40,8 @@ class RandomWalkPE(nn.Module):
 
         return self.out_map(pos_enc)
 
-name_to_module = {
-    "RandomWalkPE": RandomWalkPE,
-}
+def get_graph_positional_encoding(positional_encoding_type, *args, **kwargs):
+    if positional_encoding_type == "RandomWalkPE":
+        return RandomWalkPE(*args, **kwargs)
+    else:
+        raise ValueError(f"Invalid positional encoding type: {positional_encoding_type}")

@@ -13,7 +13,8 @@ from .metrics import compute_metrics
 def _train_one_epoch(
     model, device, 
     dataloader, 
-    optimizer
+    optimizer, 
+    scheduler,
     ):
     """
     Train the model for one epoch minimizing the MSE loss.
@@ -40,12 +41,14 @@ def _train_one_epoch(
         loss = F.mse_loss(y_pred, y_true)
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
 def train(
     model, device, 
     train_dataset, val_dataset, 
     epochs, batch_size, 
-    learning_rate, weight_decay,
+    lr, weight_decay,
+    warmup_epochs, warmup_start_factor,
     output_dir, 
     ):
     """
@@ -58,7 +61,7 @@ def train(
         val_dataset: The validation dataset
         epochs: The number of epochs to train for
         batch_size: The batch size to use
-        learning_rate: The learning rate
+        lr: The learning rate
         weight_decay: The weight decay
         output_dir: Directory to write logs and checkpoints
     """
@@ -68,8 +71,8 @@ def train(
     metric_labels = [
         f'{split}_{label}_{metric}'
         for metric in ('mae', 'r2')
-        for label in train_dataset.y_labels
         for split in ('train', 'val')
+        for label in train_dataset.y_labels
     ]
 
     os.makedirs(output_dir, exist_ok=True)
@@ -79,16 +82,22 @@ def train(
     # Dataloader
 
     dataloader = DataLoader(
-        train_dataset, batch_size=batch_size, 
+        train_dataset, batch_size=batch_size, shuffle=True, 
         num_workers=4, persistent_workers=True, pin_memory=True, 
         collate_fn=train_dataset.collate
     )
 
     # Optimizer and schedulers
 
-    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    optimizer = AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    warmup_steps = warmup_epochs * len(dataloader)
+    warmup = lr_scheduler.LinearLR(
+        optimizer, start_factor=warmup_start_factor, total_iters=warmup_steps
+    )
+
     scheduler = lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=epochs, eta_min=1e-8
+        optimizer, T_max=epochs - warmup_epochs, eta_min=lr * 0.01
     )
 
     # Training
@@ -102,6 +111,7 @@ def train(
             model, device, 
             dataloader, 
             optimizer, 
+            warmup,
         )
 
         # Sample metrics

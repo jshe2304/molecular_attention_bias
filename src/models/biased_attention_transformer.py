@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import time
 
 from .modules.radial_functions import get_radial_function
 from .modules.attention import SDPAttention
@@ -28,7 +27,7 @@ class BiasedAttentionTransformerBlock(nn.Module):
         self.norm_2 = nn.LayerNorm(E)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, e, d, attn_mask, padding_mask):
+    def forward(self, e, d, attn_mask, padding_mask, **kwargs):
 
         B, L, E = e.shape
 
@@ -41,7 +40,7 @@ class BiasedAttentionTransformerBlock(nn.Module):
         # Attention block
 
         e0 = self.norm_1(e)
-        e1 = self.attn(e0, attn_mask=attn_mask, attn_bias=attn_bias)
+        e1 = self.attn(e0, attn_mask=attn_mask, attn_bias=attn_bias, **kwargs)
         e1 = self.dropout(e1)
         e2 = e1 + e0
         
@@ -82,7 +81,7 @@ class BiasedAttentionTransformer(nn.Module):
         self.norm = nn.LayerNorm(E)
         self.out_map = nn.Linear(E, out_features)
 
-    def forward(self, tokens, padding, r):
+    def forward(self, tokens, padding, r, **kwargs):
 
         assert tokens.shape[0] == r.shape[0] == padding.shape[0]
         B, L, *_ = tokens.shape
@@ -105,11 +104,13 @@ class BiasedAttentionTransformer(nn.Module):
         # Forward Pass
 
         e = self.embed(tokens)
+        
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
                 e=e, d=d, 
                 padding_mask=padding_mask, 
                 attn_mask=attn_mask, 
+                **kwargs
             )
         e = self.norm(e)
         e = e.mean(dim=1)

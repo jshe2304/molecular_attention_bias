@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
 
-import torch
-import torch.nn as nn
-
-from .modules import radial_functions
+from .modules.radial_functions import get_radial_function
 from .modules.fixed_attention import FixedAttention
 
 class FixedAttentionTransformerBlock(nn.Module):
@@ -20,7 +17,7 @@ class FixedAttentionTransformerBlock(nn.Module):
 
         # Layers
         
-        self.operator = FixedAttention(E, H)
+        self.attn = FixedAttention(E, H)
         self.norm_1 = nn.LayerNorm(E)
         self.mlp = nn.Sequential(
             nn.Linear(E, E * 4), 
@@ -30,7 +27,7 @@ class FixedAttentionTransformerBlock(nn.Module):
         self.norm_2 = nn.LayerNorm(E)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, e, d, attn_mask, padding_mask):
+    def forward(self, e, d, causal_mask, padding_mask):
 
         B, L, E = e.shape
 
@@ -43,7 +40,7 @@ class FixedAttentionTransformerBlock(nn.Module):
         # Attention block
 
         e0 = self.norm_1(e)
-        e1 = self.operator(e0, weights=weights, attn_mask=attn_mask)
+        e1 = self.attn(e0, weights=weights, causal_mask=causal_mask)
         e1 = self.dropout(e1)
         e2 = e1 + e0
 
@@ -105,7 +102,7 @@ class FixedAttentionTransformer(nn.Module):
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
                 e=e, d=d, 
-                attn_mask=causal_mask, 
+                causal_mask=causal_mask, 
                 padding_mask=padding_mask, 
             )
 

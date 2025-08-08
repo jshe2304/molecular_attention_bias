@@ -18,7 +18,11 @@ def compute_metrics(model, dataset, n_samples=2048, batch_size=64, device='cpu')
         device: The device to use for evaluation. 
     """
 
-    dataloader = DataLoader(dataset, batch_size=batch_size)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=True, 
+        num_workers=4, persistent_workers=True, pin_memory=(str(device) != 'cpu'), 
+        collate_fn=dataset.collate
+    )
 
     model.eval()
     batch_y_pred, batch_y_true = [], []

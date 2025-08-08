@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from .modules import graph_positional_encodings
+from .modules.graph_positional_encodings import get_graph_positional_encoding
 from .modules.attention import SDPAttention
 
 class GraphPETransformerBlock(nn.Module):
@@ -44,7 +44,7 @@ class GraphPETransformer(nn.Module):
             self, 
             n_tokens, out_features, 
             E, H, D, 
-            positional_encoding_name, 
+            positional_encoding_type, 
             dropout=0.1,
             **pe_kwargs
         ):
@@ -56,12 +56,14 @@ class GraphPETransformer(nn.Module):
         self.embed = nn.Embedding(n_tokens, E, padding_idx=0)
 
         # Positonal Encoding
-        PositionalEncoding = graph_positional_encodings.name_to_module[positional_encoding_name]
-        self.positional_encoding = PositionalEncoding(E, **pe_kwargs)
+        self.positional_encoding = get_graph_positional_encoding(
+            positional_encoding_type, 
+            E, **pe_kwargs
+        )
         
         # Transformer blocks
         self.transformer_blocks = nn.ModuleList([
-            TransformerBlock(
+            GraphPETransformerBlock(
                 E=E, H=H, 
                 dropout=dropout
             ) for _ in range(D)
@@ -77,9 +79,10 @@ class GraphPETransformer(nn.Module):
 
         # Create causal and padding masks
 
-        diag_causal_mask = torch.diag(torch.ones(L)).bool().to(padding.device)
-        padding_causal_mask = (padding.unsqueeze(-2) | padding.unsqueeze(-1)).unsqueeze(1)
-        causal_mask = padding_causal_mask | diag_causal_mask.expand_as(padding_causal_mask)
+        # diag_causal_mask = torch.diag(torch.ones(L)).bool().to(padding.device)
+        # padding_causal_mask = (padding.unsqueeze(-2) | padding.unsqueeze(-1)).unsqueeze(1)
+        # causal_mask = padding_causal_mask | diag_causal_mask.expand_as(padding_causal_mask)
+        causal_mask = (padding.unsqueeze(-2) | padding.unsqueeze(-1)).unsqueeze(1)
 
         padding_mask = padding.unsqueeze(-1).expand(B, L, self.E)
 
@@ -91,7 +94,7 @@ class GraphPETransformer(nn.Module):
         for transformer_block in self.transformer_blocks:
             e += pos_enc
             e = transformer_block(
-                e=e, adj=adj, 
+                e=e, 
                 padding_mask=padding_mask, 
                 attn_mask=causal_mask, 
             )
