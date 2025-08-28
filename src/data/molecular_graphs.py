@@ -1,3 +1,5 @@
+import os
+
 import torch
 import numpy as np
 from torch.utils.data import Dataset, default_collate
@@ -7,25 +9,25 @@ from rdkit.Chem import MolFromSmiles
 from rdkit import Chem
 
 class MolecularGraphDataset(Dataset):
-    def __init__(
-            self, 
-            smiles_file, y_file, 
-            y_labels_file, y_mean_file, y_std_file, 
-            target_labels,
-            atom_symbols='HCNOF', 
-        ):
+    def __init__(self, data_dir, target_labels,atom_symbols='HCNOF', **kwargs):
         """
         Initialize a molecular graph dataset.
         
         Args:
-            smiles_file: Path to a numpy array of SMILES strings.
-            y_file: Path to a numpy array of properties.
-            y_labels_file: Path to a numpy array of property labels.
-            y_mean_file: Path to a numpy array of mean values of properties. 
-            y_std_file: Path to a numpy array of standard deviation values of properties.
+            data_dir: Path to a directory containing the data.
             target_labels: Which properties to include.
             atom_symbols: String of atom symbols to use for tokenization.
         """
+
+        # Make data paths
+
+        smiles_file = os.path.join(data_dir, 'smiles.npy')
+        y_file = os.path.join(data_dir, 'y.npy')
+        y_labels_file = os.path.join(data_dir, 'y_labels.npy')
+        y_mean_file = os.path.join(data_dir, 'y_mean.npy')
+        y_std_file = os.path.join(data_dir, 'y_std.npy')
+
+        # Make token indices
 
         self.token_indices = {c: i for i, c in enumerate(atom_symbols, start=1)}
 

@@ -27,14 +27,14 @@ class FixedAttentionTransformerBlock(nn.Module):
         self.norm_2 = nn.LayerNorm(E)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, e, d, causal_mask, padding_mask):
+    def forward(self, tokens, e, d, causal_mask, padding_mask):
 
         B, L, E = e.shape
 
         # Process interatomic distances into weights
 
         weights = self.radial_function(
-            d.reshape(B, L, L)
+            d.reshape(B, L, L), tokens
         )
 
         # Attention block
@@ -101,7 +101,7 @@ class FixedAttentionTransformer(nn.Module):
         
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
-                e=e, d=d, 
+                tokens=tokens, e=e, d=d, 
                 causal_mask=causal_mask, 
                 padding_mask=padding_mask, 
             )

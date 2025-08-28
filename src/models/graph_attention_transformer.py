@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 
-from .modules.attention import GraphSDPAttention
+from .modules.graph_attention import get_graph_attention_operator
 
 class GraphAttentionTransformerBlock(nn.Module):
-    def __init__(self, E, H, dropout=0.1):
+    def __init__(self, E, H, graph_attention_operator_type, dropout=0.1, **operator_kwargs):
         super().__init__()
 
-        self.attn = GraphSDPAttention(E, H)
+        self.attn = get_graph_attention_operator(graph_attention_operator_type, E, H, **operator_kwargs)
         self.norm_1 = nn.LayerNorm(E)
         self.mlp = nn.Sequential(
             nn.Linear(E, E * 4), 
@@ -17,12 +17,12 @@ class GraphAttentionTransformerBlock(nn.Module):
         self.norm_2 = nn.LayerNorm(E)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, e, attn_mask, padding_mask):
+    def forward(self, e, adj, padding_mask):
 
         # Attention block
 
         e0 = self.norm_1(e)
-        e1 = self.attn(e0, attn_mask=attn_mask)
+        e1 = self.attn(e0, adj=adj)
         e1 = self.dropout(e1)
         e2 = e1 + e0
 
@@ -40,7 +40,7 @@ class GraphAttentionTransformer(nn.Module):
     """
     Transformer architecture implementing masked SDP attention for graph-structured data.
     """
-    def __init__(self, n_tokens, out_features, E, H, D, dropout=0.1):
+    def __init__(self, n_tokens, out_features, E, H, D, dropout=0.1, **operator_kwargs):
         super().__init__()
 
         self.E, self.H, self.D = E, H, D
@@ -52,7 +52,8 @@ class GraphAttentionTransformer(nn.Module):
         self.transformer_blocks = nn.ModuleList([
             GraphAttentionTransformerBlock(
                 E=E, H=H, 
-                dropout=dropout
+                dropout=dropout,
+                **operator_kwargs
             ) for _ in range(D)
         ])
         
@@ -64,9 +65,8 @@ class GraphAttentionTransformer(nn.Module):
 
         B, L, *_ = tokens.shape
 
-        # Create causal and padding masks
+        # Creat padding mask
         
-        causal_mask = ~adj.unsqueeze(1)
         padding_mask = padding.unsqueeze(-1).expand(B, L, self.E)
 
         # Forward Pass
@@ -76,7 +76,7 @@ class GraphAttentionTransformer(nn.Module):
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
                 e=e, 
-                attn_mask=causal_mask, 
+                adj=adj.unsqueeze(1), 
                 padding_mask=padding_mask, 
             )
 

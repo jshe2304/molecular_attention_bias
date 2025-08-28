@@ -1,14 +1,14 @@
 output_dir = "/scratch/midway3/jshe/molecular-attention-bias/"
 
 [model_config]
-model_type = "FixedAttentionTransformer"
+model_type = "BiasedAttentionTransformer"
 n_tokens = 6
 E = 64
 H = 8
 D = 8
 dropout = 0.1
 radial_function_type = "FixedPowerLaw"
-p = -1.5
+p = -2.5
 
 [train_config]
 epochs = 128

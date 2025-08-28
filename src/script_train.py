@@ -27,9 +27,11 @@ def _make_run_ids(model_type, E, H, D, **kwargs):
     # Group ID
     group_id = model_type + '/'
     if 'radial_function_type' in kwargs:
-        group_id += kwargs['radial_function_type'] + str(kwargs.get('p', '')) + '/'
+        group_id += kwargs['radial_function_type'] + str(kwargs.get('p', '')) + str(kwargs.get('n_kernels', '')) + '/'
     elif 'positional_encoding_type' in kwargs:
         group_id += kwargs['positional_encoding_type'] + str(kwargs.get('k', '')) + '/'
+    elif 'graph_attention_operator_type' in kwargs:
+        group_id += kwargs['graph_attention_operator_type'] + '/'
     group_id += f'E{E}H{H}D{D}'
 
     # Run ID
@@ -46,25 +48,25 @@ def main(config):
 
     output_dir = config['output_dir']
     model_config = config['model_config']
+    dataset_config = config['dataset_config']
     train_config = config['train_config']
-    train_dataset_config = config['train_dataset_config']
-    val_dataset_config = config['val_dataset_config']
-
+    
     # Make run identifiers
 
     group_id, run_id = _make_run_ids(**model_config)
-    output_dir = os.path.join(output_dir, group_id, run_id)
+    label_id = '_'.join(dataset_config['target_labels'])
+    output_dir = os.path.join(output_dir, label_id, group_id, run_id)
 
     # Initialize model
 
-    model_config['out_features'] = len(train_dataset_config['target_labels'])
+    model_config['out_features'] = len(dataset_config['target_labels'])
     model = models.get_model(**model_config).to(device)
 
     # Initialize datasets
 
-    train_dataset = data.get_dataset(**train_dataset_config)
-    val_dataset = data.get_dataset(**val_dataset_config)
-
+    train_dataset = data.get_dataset(**dataset_config, split='train')
+    val_dataset = data.get_dataset(**dataset_config, split='validation')
+    
     # Train model
 
     train(

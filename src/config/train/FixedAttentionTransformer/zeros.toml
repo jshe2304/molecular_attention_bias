@@ -7,8 +7,8 @@ E = 64
 H = 8
 D = 8
 dropout = 0.1
-radial_function_type = "FixedPowerLaw"
-p = -1.5
+radial_function_type = "Zeros"
+
 
 [train_config]
 epochs = 128

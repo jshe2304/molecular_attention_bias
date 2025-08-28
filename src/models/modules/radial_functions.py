@@ -1,18 +1,19 @@
 import torch
 import torch.nn as nn
+import math
 
 class Zeros(nn.Module):
     def __init__(self):
         super(Zeros, self).__init__()
 
-    def forward(self, *_): return 0
+    def forward(self, *args, **kwargs): return 0
 
 class FixedPowerLaw(nn.Module):
     def __init__(self, H, p):
         super(FixedPowerLaw, self).__init__()
         self.p = float(p)
 
-    def forward(self, d):
+    def forward(self, d, *args, **kwargs):
         return self.p * (
             torch.log(d).nan_to_num(torch.finfo(d.dtype).max)
         ).unsqueeze(1)
@@ -24,7 +25,7 @@ class ExpNegativePowerLaw(nn.Module):
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
         nn.init.xavier_uniform_(self.log_p)
 
-    def forward(self, d):
+    def forward(self, d, *args, **kwargs):
         
         return -nn.functional.linear(
             torch.log(d).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
@@ -38,7 +39,7 @@ class SoftplusNegativePowerLaw(nn.Module):
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
         nn.init.xavier_uniform_(self.log_p)
 
-    def forward(self, d):
+    def forward(self, d, *args, **kwargs):
         
         return -nn.functional.linear(
             torch.log(d).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
@@ -52,9 +53,38 @@ class PowerLaw(nn.Module):
         self.p = nn.Parameter(torch.Tensor(n_heads, 1))
         nn.init.xavier_uniform_(self.p)
 
-    def forward(self, d):
+    def forward(self, d, *args, **kwargs):
         return nn.functional.linear(
-            d.unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
+            torch.log(d).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
+            self.p
+        ).permute(0, 3, 1, 2)
+    
+class InitPowerLaw(nn.Module):
+    def __init__(self, n_heads):
+        super(InitPowerLaw, self).__init__()
+        
+        self.p = nn.Parameter(torch.Tensor(n_heads, 1))
+        nn.init.zeros_(self.p)
+
+    def forward(self, d, *args, **kwargs):
+        return nn.functional.linear(
+            torch.log(d).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
+            self.p
+        ).permute(0, 3, 1, 2)
+    
+class NormalizedPowerLaw(nn.Module):
+    def __init__(self, n_heads):
+        super(NormalizedPowerLaw, self).__init__()
+        
+        self.p = nn.Parameter(torch.Tensor(n_heads, 1))
+        nn.init.xavier_uniform_(self.p)
+
+    def forward(self, d, *args, **kwargs):
+
+        d_max = (d * (d < 1e8).int()).nan_to_num(0, 0, 0).amax(dim=-1, keepdim=True)
+
+        return nn.functional.linear(
+            torch.log(d / d_max).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max), 
             self.p
         ).permute(0, 3, 1, 2)
 
@@ -67,46 +97,62 @@ class MLP(nn.Module):
             nn.Linear(hidden_dim, n_heads)
         )
 
-    def forward(self, d):
+    def forward(self, d, *args, **kwargs):
         return self.mlp(
             d.unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max)
         )
 
 class GaussianKernel(nn.Module):
-
-    def __init__(self, n_heads, n_kernels=32):
+    """
+    Pair-type aware Gaussian kernel expansion attention bias
+    """
+    def __init__(self, n_heads, n_tokens=6, n_kernels=128):
         super().__init__()
-
-        # Gaussian parameters
         
-        self.mu = nn.Parameter(torch.linspace(0, 4, n_kernels))
-        self.log_sigma = nn.Parameter(torch.full((n_kernels,), -1.609437912))
+        self.n_heads = n_heads
+        self.n_kernels = n_kernels
 
-        # MLP map to attention bias
-        
+        self.mu = nn.Parameter(torch.linspace(0., 6., n_kernels))
+        self.log_sigma = nn.Parameter(torch.zeros(n_kernels))
+
         self.mlp = nn.Sequential(
-            nn.Linear(n_kernels, n_kernels),
+            nn.Linear(n_kernels, n_kernels, bias=True),
             nn.ReLU(),
-            nn.Linear(n_kernels, n_heads)
+            nn.Linear(n_kernels, n_heads, bias=True)
         )
 
-    def forward(self, d):
+        self.gamma_table = nn.Parameter(torch.ones(n_tokens, n_tokens))
+        self.beta_table  = nn.Parameter(torch.zeros(n_tokens, n_tokens))
 
-        # Gaussian Kernel Expansion
+    def forward(self, d: torch.Tensor, tokens: torch.Tensor, *args, **kwargs):
+        """
+        Args:
+            d: (B, N, N) interatomic distances
+            tokens: (B, N) int64 atom-type indices in [0, T)
+            attn_mask: optional (B, N) bool mask (True = keep / False = pad) or (B, 1, 1, N)
 
-        mu = self.mu.view(1, 1, 1, -1)
-        sigma = self.log_sigma.exp().view(1, 1, 1, -1)
-        d = d.unsqueeze(-1)
+        Returns:
+            bias_3d: (B, heads, N, N) to add to attention logits
+            node_term (optional): (B, N, d_model) if enable_node_term() was called, else None
+        """
+        B, N, _ = d.shape
+        d = d.nan_to_num(0, posinf=0, neginf=0)
 
-        gaussians = torch.exp(-0.5 * ((d - mu) / sigma) ** 2) / (
-            sigma * 2.506628275
-        )
+        # Look up beta, gamma and scale distance
+        ti = tokens[:, :, None].expand(B, N, N)
+        tj = tokens[:, None, :].expand(B, N, N)
+        gamma = self.gamma_table[ti, tj]
+        beta  = self.beta_table[ti, tj]
+        s = gamma * d + beta
 
-        # Map to attention bias
+        # Gaussian basis expansion ψ_k(s)
+        sigma = nn.functional.softplus(self.log_sigma) + 1e-6
+        x = (s.unsqueeze(-1) - self.mu) / sigma
+        psi = torch.exp(-0.5 * x ** 2) / (math.sqrt(2.0 * math.pi) * sigma)
 
-        attn_bias = self.mlp(gaussians).permute(0, 3, 1, 2)  # (B, H, N, N)
+        phi = self.mlp(psi) # (B, N, N, n_heads)
 
-        return attn_bias.nan_to_num(torch.finfo(d.dtype).max)
+        return phi.permute(0, 3, 1, 2) # (B, n_heads, N, N)
 
 def get_radial_function(radial_function_type: str, *args, **kwargs):
     if radial_function_type == "FixedPowerLaw": 
@@ -117,8 +163,13 @@ def get_radial_function(radial_function_type: str, *args, **kwargs):
         return SoftplusNegativePowerLaw(*args, **kwargs)
     if radial_function_type == "PowerLaw": 
         return PowerLaw(*args, **kwargs)
-    if radial_function_type == "MLP": MLP,
+    if radial_function_type == "NormalizedPowerLaw": 
+        return NormalizedPowerLaw(*args, **kwargs)
+    if radial_function_type == "InitPowerLaw": 
+        return InitPowerLaw(*args, **kwargs)
+    if radial_function_type == "MLP": 
+        return MLP(*args, **kwargs)
     if radial_function_type == "GaussianKernel": 
         return GaussianKernel(*args, **kwargs)
     if radial_function_type == "Zeros": 
-        return Zeros(*args, **kwargs)
+        return Zeros()

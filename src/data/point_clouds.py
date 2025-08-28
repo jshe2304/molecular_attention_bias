@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 import torch
@@ -5,31 +6,30 @@ from torch.utils.data import Dataset, default_collate
 from torch.nn.utils.rnn import pad_sequence
 
 class PointCloudDataset(Dataset):
-    def __init__(
-            self, 
-            atoms_file, coordinates_file, y_file, 
-            y_labels_file, y_mean_file, y_std_file, 
-            target_labels,
-            atom_symbols='HCNOF', 
-            *args, **kwargs
-        ):
+    def __init__(self, data_dir,  target_labels, atom_symbols='HCNOF', **kwargs):
         """
         Initialize a point cloud dataset.
         
         Args:
-            atoms_file: Path to a numpy array of atom string sequences.
-            coordinates_file: Path to a numpy array of coordinates.
-            y_file: Path to a numpy array of properties.
-            y_labels_file: Path to a numpy array of property labels.
-            y_mean_file: Path to a numpy array of mean values of properties. 
-            y_std_file: Path to a numpy array of standard deviation values of properties.
+            data_dir: Path to a directory containing the data.
             target_labels: Which properties to include.
             atom_symbols: String of atom symbols to use for tokenization.
         """
 
+        # Make data paths
+
+        atoms_file = os.path.join(data_dir, 'atoms.npy')
+        coordinates_file = os.path.join(data_dir, 'coordinates.npy')
+        y_file = os.path.join(data_dir, 'y.npy')
+        y_labels_file = os.path.join(data_dir, 'y_labels.npy')
+        y_mean_file = os.path.join(data_dir, 'y_mean.npy')
+        y_std_file = os.path.join(data_dir, 'y_std.npy')
+
+        # Make token indices
+
         self.token_indices = {c: i for i, c in enumerate(atom_symbols, start=1)}
 
-        # Make data
+        # Load data
 
         self.atoms_arr = np.load(atoms_file, allow_pickle=True)
         self.tokens = self._tokenize_atoms(self.atoms_arr, self.token_indices)
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     import toml
 
-    config_file = '../config/train/power_law_bias.toml'
+    config_file = '../config/train/BiasedAttentionTransformer/power_law.toml'
     config = toml.load(config_file)
 
     dataset = PointCloudDataset(**config['train_dataset_config'])

@@ -27,14 +27,14 @@ class BiasedAttentionTransformerBlock(nn.Module):
         self.norm_2 = nn.LayerNorm(E)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, e, d, attn_mask, padding_mask, **kwargs):
+    def forward(self, tokens, e, d, attn_mask, padding_mask, **kwargs):
 
         B, L, E = e.shape
 
         # Scale bias
 
         attn_bias = self.radial_function(
-            d.reshape(B, L, L)
+            d.reshape(B, L, L), tokens
         )
 
         # Attention block
@@ -107,7 +107,7 @@ class BiasedAttentionTransformer(nn.Module):
         
         for transformer_block in self.transformer_blocks:
             e = transformer_block(
-                e=e, d=d, 
+                tokens=tokens, e=e, d=d, 
                 padding_mask=padding_mask, 
                 attn_mask=attn_mask, 
                 **kwargs

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=train
-#SBATCH --error=job.err
+#SBATCH --error=error.txt
 #SBATCH --output=/dev/null
 #SBATCH --account=pi-andrewferguson
 #SBATCH --time=02:00:00
