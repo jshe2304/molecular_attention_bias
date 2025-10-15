@@ -71,11 +71,19 @@ class BiasedAttentionTransformer(nn.Module):
         self.embed = nn.Embedding(n_tokens, E, padding_idx=0)
 
         # Transformer blocks
-        self.transformer_blocks = nn.ModuleList([
-            BiasedAttentionTransformerBlock(
-                E, H, radial_function_type, dropout=dropout, **radial_kwargs
-            ) for _ in range(D)
-        ])
+        if type(radial_function_type) is list:
+            assert len(radial_function_type) == D
+            self.transformer_blocks = nn.ModuleList([
+                BiasedAttentionTransformerBlock(
+                    E, H, radial_function_type[i], dropout=dropout, **radial_kwargs[i]
+                ) for i in range(D)
+            ])
+        else:
+            self.transformer_blocks = nn.ModuleList([
+                BiasedAttentionTransformerBlock(
+                    E, H, radial_function_type, dropout=dropout, **radial_kwargs
+                ) for _ in range(D)
+            ])
         
         # Out map
         self.norm = nn.LayerNorm(E)

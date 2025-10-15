@@ -3,7 +3,7 @@ output_dir = "/scratch/midway3/jshe/molecular-attention-bias/"
 [model_config]
 model_type = "BiasedAttentionTransformer"
 n_tokens = 6
-E = 64
+E = 128
 H = 8
 D = 8
 dropout = 0.1

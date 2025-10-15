@@ -11,11 +11,12 @@ class SDPAttention(nn.Module):
         self.scale = (E // H) ** -0.5
 
         self.QKV = nn.Linear(E, E * 3, bias=False)
+        self.softmax = nn.Softmax(dim=-1)
         self.out_map = nn.Linear(E, E, bias=False)
 
         self.hook = {}
 
-    def forward(self, embeddings, attn_mask=None, attn_bias=None, hook=False):
+    def forward(self, embeddings, attn_mask=None, attn_bias=None):
 
         B, L, E = embeddings.size() # Batch, no. Tokens, Embed dim.
 
@@ -29,13 +30,9 @@ class SDPAttention(nn.Module):
         # Compute attention pattern
 
         attn_logits = q @ k.transpose(-2, -1) * self.scale
-        if hook: self.hook['qkt'] = attn_logits.detach().clone().cpu()
         if attn_bias is not None: attn_logits += attn_bias
-        if hook: self.hook['attn_bias'] = attn_bias.detach().clone().cpu()
         if attn_mask is not None: attn_logits.masked_fill_(attn_mask, torch.finfo(attn_logits.dtype).min)
-        if hook: self.hook['attn_logits'] = attn_logits.detach().cpu()
-        attn = torch.softmax(attn_logits, dim=-1)
-        if hook: self.hook['attn'] = attn.detach().cpu()
+        attn = self.softmax(attn_logits)
         
         # Compute values
 
