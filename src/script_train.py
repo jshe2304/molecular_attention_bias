@@ -17,22 +17,31 @@ from datetime import datetime
 import torch
 
 import models
-import data
+import datasets
 from trainers.train import train
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def _make_run_ids(model_type, E, H, D, **kwargs):
+    '''
+    Create run identifiers for logging. 
+    '''
 
     # Group ID
     group_id = model_type + '/'
     if 'radial_function_type' in kwargs:
-        group_id += kwargs['radial_function_type'] + str(kwargs.get('p', '')) + str(kwargs.get('n_kernels', '')) + '/'
+        if type(kwargs['radial_function_type']) == list:
+            group_id += kwargs['identifier']
+        else:
+            group_id += kwargs['radial_function_type']
+        group_id += str(kwargs.get('p', ''))
+        group_id += str(kwargs.get('n_kernels', ''))
     elif 'positional_encoding_type' in kwargs:
-        group_id += kwargs['positional_encoding_type'] + str(kwargs.get('k', '')) + '/'
+        group_id += kwargs['positional_encoding_type']
+        group_id += str(kwargs.get('k', ''))
     elif 'graph_attention_operator_type' in kwargs:
-        group_id += kwargs['graph_attention_operator_type'] + '/'
-    group_id += f'E{E}H{H}D{D}'
+        group_id += kwargs['graph_attention_operator_type']
+    group_id += f'/E{E}H{H}D{D}'
 
     # Run ID
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -62,16 +71,17 @@ def main(config):
     model_config['out_features'] = len(dataset_config['target_labels'])
     model = models.get_model(**model_config).to(device)
 
-    # Initialize datasets
+    # Create datasets
 
-    train_dataset = data.get_dataset(**dataset_config, split='train')
-    val_dataset = data.get_dataset(**dataset_config, split='validation')
+    train_dataset = datasets.get_dataset(**dataset_config, split='train')
+    val_dataset = datasets.get_dataset(**dataset_config, split='validation')
+    test_dataset = datasets.get_dataset(**dataset_config, split='test')
     
     # Train model
 
     train(
         model, device, 
-        train_dataset, val_dataset, 
+        train_dataset, val_dataset, test_dataset, 
         **train_config, 
         output_dir=output_dir, 
     )

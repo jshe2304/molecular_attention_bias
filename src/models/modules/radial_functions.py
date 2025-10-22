@@ -3,13 +3,13 @@ import torch.nn as nn
 import math
 
 class Zeros(nn.Module):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(Zeros, self).__init__()
 
     def forward(self, *args, **kwargs): return 0
 
 class FixedPowerLaw(nn.Module):
-    def __init__(self, H, p):
+    def __init__(self, H, p, *args, **kwargs):
         super(FixedPowerLaw, self).__init__()
         self.p = float(p)
 
@@ -19,7 +19,7 @@ class FixedPowerLaw(nn.Module):
         ).unsqueeze(1)
 
 class ExpNegativePowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(ExpNegativePowerLaw, self).__init__()
         
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -33,7 +33,7 @@ class ExpNegativePowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
 
 class SoftplusNegativePowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(SoftplusNegativePowerLaw, self).__init__()
         
         self.log_p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -47,7 +47,7 @@ class SoftplusNegativePowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
 
 class PowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(PowerLaw, self).__init__()
         
         self.p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -60,7 +60,7 @@ class PowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
     
 class InitPowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(InitPowerLaw, self).__init__()
         
         self.p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -73,7 +73,7 @@ class InitPowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
     
 class NormalizedPowerLaw(nn.Module):
-    def __init__(self, n_heads):
+    def __init__(self, n_heads, *args, **kwargs):
         super(NormalizedPowerLaw, self).__init__()
         
         self.p = nn.Parameter(torch.Tensor(n_heads, 1))
@@ -89,7 +89,7 @@ class NormalizedPowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
 
 class MLP(nn.Module):
-    def __init__(self, n_heads, hidden_dim=64):
+    def __init__(self, n_heads, hidden_dim=64, *args, **kwargs):
         super(MLP, self).__init__()
         self.mlp = nn.Sequential(
             nn.Linear(1, hidden_dim),
@@ -106,7 +106,7 @@ class GaussianKernel(nn.Module):
     """
     Pair-type aware Gaussian kernel expansion attention bias
     """
-    def __init__(self, n_heads, n_tokens=6, n_kernels=128):
+    def __init__(self, n_heads, n_tokens=6, n_kernels=128, *args, **kwargs):
         super().__init__()
         
         self.n_heads = n_heads

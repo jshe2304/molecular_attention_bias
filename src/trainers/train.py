@@ -45,9 +45,9 @@ def _train_one_epoch(
 
 def train(
     model, device, 
-    train_dataset, val_dataset, 
+    train_dataset, val_dataset, test_dataset, 
     epochs, batch_size, 
-    lr, weight_decay,
+    lr, weight_decay, 
     warmup_epochs, warmup_start_factor,
     output_dir, 
     ):
@@ -59,6 +59,7 @@ def train(
         device: The device to use
         train_dataset: The training dataset
         val_dataset: The validation dataset
+        test_dataset: The test dataset
         epochs: The number of epochs to train for
         batch_size: The batch size to use
         lr: The learning rate
@@ -69,11 +70,11 @@ def train(
     # Make metrics labels and write log header
 
     metric_labels = [
-        f'{split}_{label}_{metric}'
-        for metric in ('mae', 'r2')
+        f'{split}_{label}_mae'
         for split in ('train', 'val')
         for label in train_dataset.y_labels
     ]
+    metric_labels.append('lr')
 
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, 'log.csv'), 'w') as f:
@@ -96,17 +97,19 @@ def train(
         optimizer, start_factor=warmup_start_factor, total_iters=warmup_steps
     )
 
-    scheduler = lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=epochs - warmup_epochs, eta_min=lr * 0.01
+    # scheduler = lr_scheduler.CosineAnnealingLR(
+    #     optimizer, T_max=(epochs - warmup_epochs), eta_min=lr * 0.01
+    # )
+    scheduler = lr_scheduler.ReduceLROnPlateau(
+        optimizer, factor=0.6, patience=6,
     )
 
-    # Training
+    # Train
 
     best_state_dict, best_loss = None, float('inf')
     for epoch in range(epochs):
 
-        # Train
-
+        # Pass through training data
         _train_one_epoch(
             model, device, 
             dataloader, 
@@ -114,38 +117,39 @@ def train(
             warmup,
         )
 
-        # Sample metrics
-
-        train_loss, train_score = compute_metrics(
-            model, train_dataset, 
-            batch_size=batch_size, device=device
-        )
-
-        val_loss, val_score = compute_metrics(
-            model, val_dataset, 
-            batch_size=batch_size, device=device
-        )
+        # Compute losses
+        train_loss = compute_metrics(model, train_dataset, per_atom=True, device=device)
+        val_loss = compute_metrics(model, val_dataset, per_atom=True, device=device)
         mean_val_loss = val_loss.mean()
 
         # Step scheduler
+        scheduler.step(mean_val_loss)
 
-        scheduler.step()
-
-        # Log metrics
-
-        metrics = np.concatenate((
-            train_loss, val_loss, train_score, val_score
-        )).tolist()
-
+        # Log losses
+        losses = np.concatenate((train_loss, val_loss)).tolist()
+        losses.append(optimizer.param_groups[0]['lr'])
         with open(os.path.join(output_dir, 'log.csv'), 'a') as f:
-            f.write(','.join(str(n) for n in metrics) + '\n')
+            f.write(','.join(str(n) for n in losses) + '\n')
 
         # Update best model
-
         if mean_val_loss < best_loss:
-            best_state_dict = model.state_dict()
-            best_loss = mean_val_loss
-    
-    # Save best model
+            best_state_dict, best_loss = model.state_dict(), mean_val_loss
 
+    # Evaluate on test set
+    model.load_state_dict(best_state_dict)
+    test_loss = compute_metrics(
+        model, test_dataset, n_samples=len(test_dataset), per_atom=False, device=device,
+    ).tolist()
+    test_loss += compute_metrics(
+        model, test_dataset, n_samples=len(test_dataset), per_atom=True, device=device,
+    ).tolist()
+
+    # Save test losses
+    loss_labels = [f'test_{label}_mae' for label in test_dataset.y_labels]
+    loss_labels += [f'test_{label}_mae_per_atom' for label in test_dataset.y_labels]
+    with open(os.path.join(output_dir, 'test_losses.csv'), 'w') as f:
+        f.write(','.join(loss_labels) + '\n')
+        f.write(','.join(str(n) for n in test_loss) + '\n')
+
+    # Save model
     torch.save(best_state_dict, os.path.join(output_dir, f'model.pt'))

@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 
 import torch
@@ -6,78 +7,68 @@ from torch.utils.data import Dataset, default_collate
 from torch.nn.utils.rnn import pad_sequence
 
 class PointCloudDataset(Dataset):
-    def __init__(self, data_dir,  target_labels, atom_symbols='HCNOF', **kwargs):
+    def __init__(self, data_dir, target_labels, **kwargs):
         """
         Initialize a point cloud dataset.
         
         Args:
             data_dir: Path to a directory containing the data.
             target_labels: Which properties to include.
-            atom_symbols: String of atom symbols to use for tokenization.
         """
 
         # Make data paths
 
-        atoms_file = os.path.join(data_dir, 'atoms.npy')
+        atoms_file = os.path.join(data_dir, 'atomic_numbers.npy')
         coordinates_file = os.path.join(data_dir, 'coordinates.npy')
         y_file = os.path.join(data_dir, 'y.npy')
         y_labels_file = os.path.join(data_dir, 'y_labels.npy')
         y_mean_file = os.path.join(data_dir, 'y_mean.npy')
         y_std_file = os.path.join(data_dir, 'y_std.npy')
 
-        # Make token indices
-
-        self.token_indices = {c: i for i, c in enumerate(atom_symbols, start=1)}
-
         # Load data
 
-        self.atoms_arr = np.load(atoms_file, allow_pickle=True)
-        self.tokens = self._tokenize_atoms(self.atoms_arr, self.token_indices)
+        atomic_numbers = np.load(atoms_file, allow_pickle=True)
+        self.tokens = self._tokenize_atoms(atomic_numbers)
         self.padding = (self.tokens == 0)
-        self.coordinates = torch.tensor(
-            np.load(coordinates_file, allow_pickle=True), 
-            dtype=torch.float32
-        )[:, :self.tokens.shape[1]]
-        self.y = torch.tensor(
-            np.load(y_file, allow_pickle=True), 
-            dtype=torch.float32
-        )
+        self.coordinates = torch.tensor(np.load(coordinates_file), dtype=torch.float32)
+        self.y_labels = np.load(y_labels_file)
+        self.y = torch.tensor(np.load(y_file), dtype=torch.float32) # (n_samples, n_properties)
+        self.y_mean = torch.tensor(np.load(y_mean_file), dtype=torch.float32).unsqueeze(0) # (1, n_properties)
+        self.y_std = torch.tensor(np.load(y_std_file), dtype=torch.float32).unsqueeze(0) # (1, n_properties)
 
         # Select desired properties
 
-        all_y_labels = np.load(y_labels_file, allow_pickle=True)
-        label_indices = np.in1d(all_y_labels, target_labels).nonzero()[0]
-        self.y_labels = all_y_labels[label_indices]
+        label_indices = np.in1d(self.y_labels, target_labels).nonzero()[0].tolist()
+        self.y_labels = self.y_labels[label_indices]
         self.y = self.y[:, label_indices]
+        self.y_mean = self.y_mean[:, label_indices]
+        self.y_std = self.y_std[:, label_indices]
 
-        # Load target normalization statistics
+        # Normalize targets
+        self.y = (self.y - self.y_mean) / self.y_std
 
-        self.y_mean = torch.tensor(
-            np.load(y_mean_file, allow_pickle=True), 
-            dtype=torch.float32
-        )[label_indices].unsqueeze(0)
-        self.y_std = torch.tensor(
-            np.load(y_std_file, allow_pickle=True), 
-            dtype=torch.float32
-        )[label_indices].unsqueeze(0)
-
+        # Check that data is consistent
         assert self.tokens.shape[0] == self.y.shape[0] == self.coordinates.shape[0] # Number of samples
         assert self.tokens.shape[1] == self.coordinates.shape[1] # Number of atoms
         assert self.y.shape[1] == self.y_mean.shape[1] == self.y_std.shape[1] # Number of properties
 
     @staticmethod
-    def _tokenize_atoms(atoms_arr, token_indices):
+    def _tokenize_atoms(atomic_numbers):
         """
         Tokenize atom strings given a token index dictionary.
         """
+
+        unique_atomic_numbers = np.sort(np.unique(atomic_numbers))
+        token_indices = {c: i for i, c in enumerate(unique_atomic_numbers)}
+
         tokens = [
-            torch.tensor([token_indices[atom] for atom in atoms]).int()
-            for atoms in atoms_arr
+            torch.tensor([token_indices[atom] for atom in molecule]).int()
+            for molecule in atomic_numbers
         ]
         return pad_sequence(tokens, batch_first=True, padding_value=0)
 
     def __len__(self):
-        return len(self.atoms_arr)
+        return len(self.tokens)
 
     def __getitem__(self, idx):
         return self.tokens[idx], self.padding[idx], self.coordinates[idx], self.y[idx]
@@ -96,10 +87,12 @@ if __name__ == '__main__':
 
     import toml
 
-    config_file = '../config/train/BiasedAttentionTransformer/power_law.toml'
+    config_file = '/home/jshe/molecular_attention_bias/src/config/train/spice/BiasedAttentionTransformer/power_law.toml'
     config = toml.load(config_file)
 
-    dataset = PointCloudDataset(**config['train_dataset_config'])
+    data_dir = os.path.join(config['dataset_config']['data_dir'], 'train')
+    target_labels = config['dataset_config']['target_labels']
+    dataset = PointCloudDataset(data_dir, target_labels)
 
     print('____Shapes____')
     print('Number of samples:', len(dataset))

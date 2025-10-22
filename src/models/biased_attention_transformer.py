@@ -75,7 +75,7 @@ class BiasedAttentionTransformer(nn.Module):
             assert len(radial_function_type) == D
             self.transformer_blocks = nn.ModuleList([
                 BiasedAttentionTransformerBlock(
-                    E, H, radial_function_type[i], dropout=dropout, **radial_kwargs[i]
+                    E, H, radial_function_type[i], dropout=dropout, **radial_kwargs
                 ) for i in range(D)
             ])
         else:
@@ -121,6 +121,19 @@ class BiasedAttentionTransformer(nn.Module):
                 **kwargs
             )
         e = self.norm(e)
-        e = e.mean(dim=1)
-        
-        return self.out_map(e)
+        e = self.out_map(e).sum(dim=1)
+
+        return e
+
+
+if __name__ == '__main__':
+
+    model = BiasedAttentionTransformer(
+        n_tokens=6,
+        out_features=3,
+        E=128, 
+        H=8, 
+        D=8, 
+        radial_function_type = ["ExpNegativePowerLaw"] * 2 + ["Zeros"] * 6,
+    )
+    print(model)
