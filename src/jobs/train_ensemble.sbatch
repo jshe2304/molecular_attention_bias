@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=train
-#SBATCH --error=error.txt
-#SBATCH --output=/dev/null
+#SBATCH --error=output.txt
+#SBATCH --output=output.txt
 #SBATCH --account=pi-andrewferguson
 #SBATCH --time=02:00:00
 #SBATCH --partition=andrewferguson-gpu

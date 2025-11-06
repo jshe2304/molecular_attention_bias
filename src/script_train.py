@@ -89,6 +89,7 @@ def main(config):
 if __name__ == '__main__':
 
     config_path = sys.argv[1]
+    #print(config_path)
     config = toml.load(config_path)
 
     main(config)

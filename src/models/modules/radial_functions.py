@@ -6,7 +6,8 @@ class Zeros(nn.Module):
     def __init__(self, *args, **kwargs):
         super(Zeros, self).__init__()
 
-    def forward(self, *args, **kwargs): return 0
+    def forward(self, d, *args, **kwargs): 
+        return torch.zeros_like(d).unsqueeze(1)
 
 class FixedPowerLaw(nn.Module):
     def __init__(self, H, p, *args, **kwargs):
@@ -89,24 +90,24 @@ class NormalizedPowerLaw(nn.Module):
         ).permute(0, 3, 1, 2)
 
 class MLP(nn.Module):
-    def __init__(self, n_heads, hidden_dim=64, *args, **kwargs):
+    def __init__(self, n_heads, k, *args, **kwargs):
         super(MLP, self).__init__()
         self.mlp = nn.Sequential(
-            nn.Linear(1, hidden_dim),
+            nn.Linear(1, k),
             nn.ReLU(),
-            nn.Linear(hidden_dim, n_heads)
+            nn.Linear(k, n_heads)
         )
 
     def forward(self, d, *args, **kwargs):
         return self.mlp(
             d.unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max)
-        )
+        ).permute(0, 3, 1, 2)
 
 class GaussianKernel(nn.Module):
     """
     Pair-type aware Gaussian kernel expansion attention bias
     """
-    def __init__(self, n_heads, n_tokens=6, n_kernels=128, *args, **kwargs):
+    def __init__(self, n_heads, n_tokens, n_kernels=32, *args, **kwargs):
         super().__init__()
         
         self.n_heads = n_heads
@@ -154,22 +155,54 @@ class GaussianKernel(nn.Module):
 
         return phi.permute(0, 3, 1, 2) # (B, n_heads, N, N)
 
+class PairedPowerLaw(nn.Module):
+    """
+    Pair-type aware power law expansion attention bias
+    """
+    def __init__(self, n_heads, n_tokens, *args, **kwargs):
+        super().__init__()
+        
+        self.p_table = nn.Parameter(torch.ones(n_tokens, n_tokens, n_heads))
+
+    def forward(self, d: torch.Tensor, tokens: torch.Tensor, *args, **kwargs):
+        """
+        Args:
+            d: (B, N, N) interatomic distances
+            tokens: (B, N) int64 atom-type indices in [0, T)
+        """
+        B, N, _ = d.shape
+
+        # Look up p
+        ti = tokens[:, :, None].expand(B, N, N)
+        tj = tokens[:, None, :].expand(B, N, N)
+        p = self.p_table[ti, tj]
+
+        log_d = torch.log(d).unsqueeze(-1).nan_to_num(torch.finfo(d.dtype).max)
+        
+        # Power law expansion
+        return (p * log_d).permute(0, 3, 1, 2)
+
+
 def get_radial_function(radial_function_type: str, *args, **kwargs):
     if radial_function_type == "FixedPowerLaw": 
         return FixedPowerLaw(*args, **kwargs)
-    if radial_function_type == "ExpNegativePowerLaw": 
+    elif radial_function_type == "ExpNegativePowerLaw": 
         return ExpNegativePowerLaw(*args, **kwargs)
-    if radial_function_type == "SoftplusNegativePowerLaw": 
+    elif radial_function_type == "SoftplusNegativePowerLaw": 
         return SoftplusNegativePowerLaw(*args, **kwargs)
-    if radial_function_type == "PowerLaw": 
+    elif radial_function_type == "PowerLaw": 
         return PowerLaw(*args, **kwargs)
-    if radial_function_type == "NormalizedPowerLaw": 
+    elif radial_function_type == "NormalizedPowerLaw": 
         return NormalizedPowerLaw(*args, **kwargs)
-    if radial_function_type == "InitPowerLaw": 
+    elif radial_function_type == "InitPowerLaw": 
         return InitPowerLaw(*args, **kwargs)
-    if radial_function_type == "MLP": 
+    elif radial_function_type == "MLP": 
         return MLP(*args, **kwargs)
-    if radial_function_type == "GaussianKernel": 
+    elif radial_function_type == "GaussianKernel": 
         return GaussianKernel(*args, **kwargs)
-    if radial_function_type == "Zeros": 
+    elif radial_function_type == "Zeros": 
         return Zeros()
+    elif radial_function_type == "PairedPowerLaw": 
+        return PairedPowerLaw(*args, **kwargs)
+    else:
+        raise ValueError(f"Invalid radial function type: {radial_function_type}")

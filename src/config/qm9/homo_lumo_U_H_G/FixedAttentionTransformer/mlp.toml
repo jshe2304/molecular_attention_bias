@@ -1,0 +1,24 @@
+output_dir = "/scratch/midway3/jshe/molecular-attention-bias/qm9/"
+
+[model_config]
+model_type = "FixedAttentionTransformer"
+n_tokens = 6
+E = 128
+H = 8
+D = 8
+dropout = 0.1
+radial_function_type = "MLP"
+k=32
+
+[train_config]
+epochs = 128
+batch_size = 64
+lr = 0.0001
+weight_decay = 0.00001
+warmup_epochs = 1
+warmup_start_factor = 0.01
+
+[dataset_config]
+dataset_type = "PointCloudDataset"
+data_dir = "/scratch/midway3/jshe/data/qm9/"
+target_labels = ['homo', 'lumo', 'U', 'H', 'G']

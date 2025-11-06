@@ -43,6 +43,8 @@ def _train_one_epoch(
         optimizer.step()
         scheduler.step()
 
+        print(f'Loss: {loss.item()}')
+
 def train(
     model, device, 
     train_dataset, val_dataset, test_dataset, 

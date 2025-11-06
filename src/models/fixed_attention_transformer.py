@@ -56,19 +56,31 @@ class FixedAttentionTransformerBlock(nn.Module):
 
 class FixedAttentionTransformer(nn.Module):
 
-    def __init__(self, n_tokens, out_features, E, H, D, radial_function_type, dropout=0.1, **radial_kwargs):
+    def __init__(
+            self, 
+            n_tokens, out_features, 
+            E, H, D, 
+            radial_function_type, 
+            dropout=0.1, 
+            **radial_kwargs
+        ):
         super().__init__()
 
+        self.out_features = out_features
         self.E, self.H, self.D = E, H, D
 
+        radial_kwargs['n_tokens'] = n_tokens
+        
         # Embedding layer
         self.embed = nn.Embedding(n_tokens, E, padding_idx=0)
 
         # Transformer blocks
+        if not isinstance(radial_function_type, list):
+            radial_function_type = [radial_function_type] * D
         self.transformer_blocks = nn.ModuleList([
             FixedAttentionTransformerBlock(
-                E, H, radial_function_type, dropout=dropout, **radial_kwargs
-            ) for _ in range(D)
+                E, H, radial_function, dropout=dropout, **radial_kwargs
+            ) for radial_function in radial_function_type
         ])
         
         # Out map
@@ -107,6 +119,16 @@ class FixedAttentionTransformer(nn.Module):
             )
 
         e = self.norm(e)
-        e = e.mean(dim=1)
 
-        return self.out_map(e)
+        return self.out_map(e.mean(dim=1))
+
+if __name__ == '__main__':
+
+    model = FixedAttentionTransformer(
+        n_tokens=6,
+        out_features=1,
+        E=128, 
+        H=8, 
+        D=8, 
+        radial_function_type = ["ExpNegativePowerLaw"] * 2 + ["Zeros"] * 6,
+    )

@@ -30,6 +30,8 @@ class MolecularGraphDataset(Dataset):
 
         # Load data
 
+        print(target_labels)
+
         atomic_numbers = np.load(atomic_numbers_file)
         self.smiles_arr = np.load(smiles_file, allow_pickle=True)
         self.tokens, self.adj_matrices = self._tokenize_smiles(self.smiles_arr, atomic_numbers)
@@ -41,11 +43,13 @@ class MolecularGraphDataset(Dataset):
 
         # Select desired properties
 
-        label_indices = np.in1d(self.y_labels, target_labels).nonzero()[0]
-        self.y_labels = self.y_labels[label_indices]
-        self.y = self.y[:, label_indices]
-        self.y_mean = self.y_mean[:, label_indices]
-        self.y_std = self.y_std[:, label_indices]
+        label_mask = np.in1d(self.y_labels, target_labels)
+        label_indices_np = label_mask.nonzero()[0]
+        self.y_labels = self.y_labels[label_indices_np]
+        label_indices = torch.as_tensor(label_indices_np, dtype=torch.long)
+        self.y = self.y.index_select(1, label_indices)
+        self.y_mean = self.y_mean.index_select(1, label_indices)
+        self.y_std = self.y_std.index_select(1, label_indices)
         
         # Normalize targets
 

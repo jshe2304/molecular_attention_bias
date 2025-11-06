@@ -1,0 +1,25 @@
+output_dir = "/scratch/midway3/jshe/molecular-attention-bias/spice/"
+
+[model_config]
+model_type = "BiasedAttentionTransformer"
+n_tokens = 19
+E = 128
+H = 8
+D = 8
+dropout = 0.1
+radial_function_type = ["FixedPowerLaw", "FixedPowerLaw", "FixedPowerLaw", "FixedPowerLaw", "Zeros", "Zeros", "Zeros", "Zeros", ]
+p=-1
+identifier = "FixedPowerLaw4Zeros4"
+
+[train_config]
+epochs = 128
+batch_size = 64
+lr = 0.0001
+weight_decay = 0.00001
+warmup_epochs = 1
+warmup_start_factor = 0.01
+
+[dataset_config]
+dataset_type = "PointCloudDataset"
+data_dir = "/scratch/midway3/jshe/data/spice/"
+target_labels = ['U']

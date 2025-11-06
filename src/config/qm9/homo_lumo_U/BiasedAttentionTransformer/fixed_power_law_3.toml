@@ -1,0 +1,24 @@
+output_dir = "/scratch/midway3/jshe/molecular-attention-bias/"
+
+[model_config]
+model_type = "BiasedAttentionTransformer"
+n_tokens = 6
+E = 64
+H = 8
+D = 8
+dropout = 0.1
+radial_function_type = "FixedPowerLaw"
+p = -3
+
+[train_config]
+epochs = 128
+batch_size = 64
+lr = 0.0001
+weight_decay = 0.00001
+warmup_epochs = 2
+warmup_start_factor = 0.01
+
+[dataset_config]
+dataset_type = "PointCloudDataset"
+data_dir = "/scratch/midway3/jshe/data/qm9/scaffolded/"
+target_labels = ['homo', 'lumo', 'U']

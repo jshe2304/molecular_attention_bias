@@ -65,25 +65,22 @@ class BiasedAttentionTransformer(nn.Module):
         ):
         super().__init__()
 
+        self.out_features = out_features
         self.E, self.H, self.D = E, H, D
+
+        radial_kwargs['n_tokens'] = n_tokens
 
         # Embedding layer
         self.embed = nn.Embedding(n_tokens, E, padding_idx=0)
 
         # Transformer blocks
-        if type(radial_function_type) is list:
-            assert len(radial_function_type) == D
-            self.transformer_blocks = nn.ModuleList([
-                BiasedAttentionTransformerBlock(
-                    E, H, radial_function_type[i], dropout=dropout, **radial_kwargs
-                ) for i in range(D)
-            ])
-        else:
-            self.transformer_blocks = nn.ModuleList([
-                BiasedAttentionTransformerBlock(
-                    E, H, radial_function_type, dropout=dropout, **radial_kwargs
-                ) for _ in range(D)
-            ])
+        if not isinstance(radial_function_type, list):
+            radial_function_type = [radial_function_type] * D
+        self.transformer_blocks = nn.ModuleList([
+            BiasedAttentionTransformerBlock(
+                E, H, radial_function, dropout=dropout, **radial_kwargs
+            ) for radial_function in radial_function_type
+        ])
         
         # Out map
         self.norm = nn.LayerNorm(E)
@@ -121,19 +118,17 @@ class BiasedAttentionTransformer(nn.Module):
                 **kwargs
             )
         e = self.norm(e)
-        e = self.out_map(e).sum(dim=1)
 
-        return e
-
+        return self.out_map(e.mean(dim=1))
 
 if __name__ == '__main__':
 
     model = BiasedAttentionTransformer(
         n_tokens=6,
-        out_features=3,
+        n_global_features=1,
+        n_atomic_features=1,
         E=128, 
         H=8, 
         D=8, 
         radial_function_type = ["ExpNegativePowerLaw"] * 2 + ["Zeros"] * 6,
     )
-    print(model)
