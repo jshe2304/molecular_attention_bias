@@ -1,0 +1,283 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nyt/global//global/global}
+    \entry{jacobs-mlip-review}{article}{}
+      \name{author}{30}{}{%
+        {{un=0,uniquepart=base,hash=b0d6cf07d11ed51e5613f26384aa4619}{%
+           family={Jacobs},
+           familyi={J\bibinitperiod},
+           given={Ryan},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4d9c96a8604deb9b0ba69f71c5a0d305}{%
+           family={Morgan},
+           familyi={M\bibinitperiod},
+           given={Dane},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=dccb3ea21bf97a95084efe5edbcdb32f}{%
+           family={Attarian},
+           familyi={A\bibinitperiod},
+           given={Siamak},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=c65c35c66755b7ce7c8e39a7bc0ad7a0}{%
+           family={Meng},
+           familyi={M\bibinitperiod},
+           given={Jun},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=155b0480c5b073b5f81b86faca2ad1ed}{%
+           family={Shen},
+           familyi={S\bibinitperiod},
+           given={Chen},
+           giveni={C\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=7414c780dfbac5ec64a7bac19edd4853}{%
+           family={Wu},
+           familyi={W\bibinitperiod},
+           given={Zhenghao},
+           giveni={Z\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=58c82de8877c95dbd34e70abe0e47e1b}{%
+           family={Xie},
+           familyi={X\bibinitperiod},
+           given={Clare\bibnamedelima Yijia},
+           giveni={C\bibinitperiod\bibinitdelim Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=6e412d907cb0c6c47263d8a552f112a1}{%
+           family={Yang},
+           familyi={Y\bibinitperiod},
+           given={Julia\bibnamedelima H.},
+           giveni={J\bibinitperiod\bibinitdelim H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2edf9404f5670c61a8fe3faf0c944d19}{%
+           family={Artrith},
+           familyi={A\bibinitperiod},
+           given={Nongnuch},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=9b3e57daccbdfbd9465e35f5e752a607}{%
+           family={Blaiszik},
+           familyi={B\bibinitperiod},
+           given={Ben},
+           giveni={B\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=1119594242bcd7037a1f252b0626e411}{%
+           family={Ceder},
+           familyi={C\bibinitperiod},
+           given={Gerbrand},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2c27113a6bbb9b9c20e2d78166db3fb8}{%
+           family={Choudhary},
+           familyi={C\bibinitperiod},
+           given={Kamal},
+           giveni={K\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=aef6628a7e1ad935b99d3d3cf7e63e20}{%
+           family={Csányi},
+           familyi={C\bibinitperiod},
+           given={Gábor},
+           giveni={G\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=3a0876c15555e21173621c0d455adfff}{%
+           family={Çubuk},
+           familyi={Ç\bibinitperiod},
+           given={Ekin\bibnamedelima Doğuş},
+           giveni={E\bibinitperiod\bibinitdelim D\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=7a2163417806d90b43afd15c0365f5af}{%
+           family={Deng},
+           familyi={D\bibinitperiod},
+           given={Bowen},
+           giveni={B\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ea0c5968704daa4edbbcc3d7369a2c9e}{%
+           family={Drautz},
+           familyi={D\bibinitperiod},
+           given={Ralf},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=0f8a8d2be5010ce41a58ac9a9e858ace}{%
+           family={Fu},
+           familyi={F\bibinitperiod},
+           given={Xiang},
+           giveni={X\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=3f8b59cd2dfceed714d405a08c389acb}{%
+           family={Godwin},
+           familyi={G\bibinitperiod},
+           given={Jonathan},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=81459ef9e663cf418b718d392867309d}{%
+           family={Honavar},
+           familyi={H\bibinitperiod},
+           given={Vasant},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=6ed4f52ba2b488ce334333c06ef481fd}{%
+           family={Isayev},
+           familyi={I\bibinitperiod},
+           given={Olexandr},
+           giveni={O\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=f2eb80aa8030e4b0ca6b77fddb74baab}{%
+           family={Johansson},
+           familyi={J\bibinitperiod},
+           given={Anders},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=0b6025fed4b33cd56ba34b371d229b3f}{%
+           family={Kozinsky},
+           familyi={K\bibinitperiod},
+           given={Boris},
+           giveni={B\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=4bd51b2c4964c0a9b3410f6d1b47b573}{%
+           family={Martiniani},
+           familyi={M\bibinitperiod},
+           given={Stefano},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ec35ac10384a057f3608216b62bde711}{%
+           family={Ong},
+           familyi={O\bibinitperiod},
+           given={Shyue\bibnamedelima Ping},
+           giveni={S\bibinitperiod\bibinitdelim P\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=cb9a00d1a8090cdcc7d576241c87d249}{%
+           family={Poltavsky},
+           familyi={P\bibinitperiod},
+           given={Igor},
+           giveni={I\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=abbf1248f3251e780f3a60bf32fde01c}{%
+           family={Schmidt},
+           familyi={S\bibinitperiod},
+           given={KJ},
+           giveni={K\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=00de5d13bc64079d1695f567900acae1}{%
+           family={Takamoto},
+           familyi={T\bibinitperiod},
+           given={So},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ea1407d548651a47df125bdb1ffb8ade}{%
+           family={Thompson},
+           familyi={T\bibinitperiod},
+           given={Aidan},
+           giveni={A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=75f5727e6e7c1a538c837cacfd2d042c}{%
+           family={Westermayr},
+           familyi={W\bibinitperiod},
+           given={Julia},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=14c0c602ff61677f57518fdc5e2823ff}{%
+           family={Wood},
+           familyi={W\bibinitperiod},
+           given={Brandon\bibnamedelima M.},
+           giveni={B\bibinitperiod\bibinitdelim M\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{e49cefdcb0e7d5960068c9cbefa94b7d}
+      \strng{fullhash}{c07d7775f1f033d6eeff45df618b7195}
+      \strng{bibnamehash}{e49cefdcb0e7d5960068c9cbefa94b7d}
+      \strng{authorbibnamehash}{e49cefdcb0e7d5960068c9cbefa94b7d}
+      \strng{authornamehash}{e49cefdcb0e7d5960068c9cbefa94b7d}
+      \strng{authorfullhash}{c07d7775f1f033d6eeff45df618b7195}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{arXiv preprint}
+      \field{note}{Accessed: 2025-11-19}
+      \field{number}{arXiv:2503.09814}
+      \field{title}{A practical guide to machine learning interatomic potentials – Status and future}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://arxiv.org/pdf/2503.09814
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/pdf/2503.09814
+      \endverb
+    \endentry
+    \entry{li-mlip-review}{article}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{3}{}{%
+        {{un=0,uniquepart=base,hash=de4f40f58ec11067811bb3cfff116450}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Yifan},
+           giveni={Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=fce886af01bebebf8a85a395cae3efe9}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Xiuying},
+           giveni={X\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=dc59efda4c059476184650a6c6b795aa}{%
+           family={Shen},
+           familyi={S\bibinitperiod},
+           given={Lei},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{b9a87f3585b51330106e41b8690d5065}
+      \strng{fullhash}{b9a87f3585b51330106e41b8690d5065}
+      \strng{bibnamehash}{b9a87f3585b51330106e41b8690d5065}
+      \strng{authorbibnamehash}{b9a87f3585b51330106e41b8690d5065}
+      \strng{authornamehash}{b9a87f3585b51330106e41b8690d5065}
+      \strng{authorfullhash}{b9a87f3585b51330106e41b8690d5065}
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Journal of Materials Informatics}
+      \field{note}{Accessed: 2025-11-19}
+      \field{number}{43}
+      \field{title}{A critical review of machine learning interatomic potentials and Hamiltonian}
+      \field{volume}{5}
+      \field{year}{2025}
+      \verb{doi}
+      \verb 10.20517/jmi.2025.17
+      \endverb
+      \verb{urlraw}
+      \verb https://www.oaepublish.com/articles/jmi.2025.17
+      \endverb
+      \verb{url}
+      \verb https://www.oaepublish.com/articles/jmi.2025.17
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+
